@@ -17,12 +17,29 @@ type LineInfo = {
 // this can be a string or a mathjax rendering
 type ElementInfo = {
 	element: string | SVG.G
+	leadingSpace: boolean
 	//the width of the element
 	width: number
 	// the distance from the baseline to the top of the element
 	ascent: number
 	// the distance from the baseline to the bottom of the element
 	descent: number
+}
+
+type TextMetricInfo = {
+	width: number
+	actualBoundingBoxAscent: number
+	actualBoundingBoxDescent: number
+}
+
+type RenderToken = {
+	element: string | MathJaxRenderInfo
+	leadingSpace: boolean
+}
+
+type TextToken = {
+	text: string
+	leadingSpace: boolean
 }
 
 const syllableRegex = /([^aeiouy]*[aeiouy]+(?:[^aeiouy]*$|[^aeiouy](?=[^aeiouy]))?)|[^aeiouy]+$/gi
@@ -55,14 +72,17 @@ export function convertTextToNativeSVGText(text: Text, textBox: SVG.Box, useHyph
 	const lines: LineInfo[] = []
 	for (const line of explicitLines) {
 		const textSections = mathjaxParser.parse(line)
-		const renderedSections: (string | MathJaxRenderInfo)[] = []
+		const renderedSections: RenderToken[] = []
 		for (const section of textSections) {
 			if (section.type == "inline") {
 				const rendered = renderMathJax(section.text, fontSizept)
-				renderedSections.push(rendered)
+				renderedSections.push({ element: rendered, leadingSpace: renderedSections.length > 0 })
 			} else {
-				section.text.split(/\s+/).forEach((word) => {
-					renderedSections.push(word)
+				tokenizeTextSection(section.text).forEach((token, index) => {
+					renderedSections.push({
+						element: token.text,
+						leadingSpace: index == 0 ? renderedSections.length > 0 : token.leadingSpace,
+					})
 				})
 			}
 		}
@@ -108,12 +128,18 @@ function layoutText(lines: LineInfo[], text: Text, textBox: SVG.Box): SVG.G {
 			: text.align == TextAlign.CENTER ? remainingLineSpace / 2
 			: 0
 
+		const lineSpaceCount = line.elements.filter((element) => element.leadingSpace).length
 		const currentSpaceWidth =
-			text.align == TextAlign.JUSTIFY ? remainingLineSpace / (line.elements.length - 1) + spaceWidth : spaceWidth
+			text.align == TextAlign.JUSTIFY && lineSpaceCount > 0 ?
+				remainingLineSpace / lineSpaceCount + spaceWidth
+			:	spaceWidth
 
 		let currentXPos = 0
 		for (let elementIndex = 0; elementIndex < line.elements.length; elementIndex++) {
 			const element = line.elements[elementIndex]
+			if (element.leadingSpace) {
+				currentXPos += currentSpaceWidth
+			}
 
 			if (typeof element.element == "string") {
 				lineTspans.push(
@@ -129,7 +155,7 @@ function layoutText(lines: LineInfo[], text: Text, textBox: SVG.Box): SVG.G {
 				})
 				renderedElements.add(containerGroup)
 			}
-			currentXPos += currentSpaceWidth + element.width
+			currentXPos += element.width
 		}
 
 		tspans.push(lineTspans.join(""))
@@ -157,7 +183,7 @@ function layoutText(lines: LineInfo[], text: Text, textBox: SVG.Box): SVG.G {
 
 // greedy algorithm to fully use up the text rectangle. maybe change to Knuth–Plass line breaking later on
 function wrapLine(
-	line: (string | MathJaxRenderInfo)[],
+	line: RenderToken[],
 	fontSize: string,
 	maxWidth: number,
 	useHyphenation: boolean
@@ -168,26 +194,35 @@ function wrapLine(
 	let currentMaxAscent = 0
 	let currentMaxDescent = 0
 	const spaceWidth = getTextMetrics(" ", fontSize).width
+	// Browser text metrics are slightly more permissive than compiled TeX output.
+	// Reserve a small amount of width so the GUI wraps a bit earlier and stays closer to TikZ.
+	const wrapSafetyMargin = Math.max(getTextMetrics("-", fontSize).width * 0.35, 1)
+	const effectiveMaxWidth = Math.max(maxWidth - wrapSafetyMargin, 0)
 
-	line.forEach((element, index) => {
+	line.forEach((token, index) => {
 		let elementWidth = 0
 		let elementAscent = 0
 		let elementDescent = 0
-		const startSpace = currentLineWidth > 0 ? spaceWidth : 0
+		const startSpace = currentLineWidth > 0 && token.leadingSpace ? spaceWidth : 0
 
-		if (typeof element === "string") {
+		if (typeof token.element === "string") {
 			// if the element is a string
-			let textMetrics = getTextMetrics(element, fontSize)
+			let textMetrics = getTextMetrics(token.element, fontSize)
 			elementWidth = textMetrics.width
 			elementAscent = textMetrics.actualBoundingBoxAscent
 			elementDescent = textMetrics.actualBoundingBoxDescent
 
-			if (currentLineWidth + startSpace + elementWidth > maxWidth) {
+			if (currentLineWidth + startSpace + elementWidth > effectiveMaxWidth) {
 				if (useHyphenation) {
-					const syllables = element.match(syllableRegex)
+					const syllables = token.element.match(syllableRegex)
 					// if syllables is not empty, fit the word into the linewidth while respecting the bounding box
 					if (syllables) {
-						let fittedSyllables = fitWord(syllables, currentLineWidth + startSpace, maxWidth, fontSize)
+						let fittedSyllables = fitWord(
+							syllables,
+							currentLineWidth + startSpace,
+							effectiveMaxWidth,
+							fontSize
+						)
 
 						// Add syllables to lines
 						for (let i = 0; i < fittedSyllables.length; i++) {
@@ -201,6 +236,7 @@ function wrapLine(
 								currentLine.push({
 									ascent: elementAscent,
 									descent: elementDescent,
+									leadingSpace: i == 0 ? token.leadingSpace : false,
 									width: elementWidth,
 									element: fittedSyllables[i],
 								})
@@ -234,7 +270,13 @@ function wrapLine(
 						descent: currentMaxDescent,
 					})
 					currentLine = [
-						{ ascent: elementAscent, descent: elementDescent, width: elementWidth, element: element },
+						{
+							ascent: elementAscent,
+							descent: elementDescent,
+							leadingSpace: false,
+							width: elementWidth,
+							element: token.element,
+						},
 					]
 					currentLineWidth = elementWidth
 					currentMaxAscent = elementAscent
@@ -246,8 +288,9 @@ function wrapLine(
 				currentLine.push({
 					ascent: elementAscent,
 					descent: elementDescent,
+					leadingSpace: token.leadingSpace,
 					width: elementWidth,
-					element: element,
+					element: token.element,
 				})
 				currentLineWidth += elementWidth + startSpace
 				currentMaxAscent = Math.max(currentMaxAscent, elementAscent)
@@ -256,11 +299,11 @@ function wrapLine(
 		} else {
 			// the element is a mathjax rendering
 			// the ascent depends on the baseline alignment
-			elementAscent = (1 + element.baselineAlignmentRatio) * element.height
-			elementDescent = element.height - elementAscent
-			elementWidth = element.width
+			elementAscent = (1 + token.element.baselineAlignmentRatio) * token.element.height
+			elementDescent = token.element.height - elementAscent
+			elementWidth = token.element.width
 
-			if (currentLineWidth + startSpace + elementWidth > maxWidth) {
+			if (currentLineWidth + startSpace + elementWidth > effectiveMaxWidth) {
 				// if the element does not fit into the current line, add the current line to the completed lines
 				completedLines.push({
 					elements: currentLine,
@@ -270,7 +313,13 @@ function wrapLine(
 				})
 				// and start a new line with the current element
 				currentLine = [
-					{ ascent: elementAscent, descent: elementDescent, width: elementWidth, element: element.element },
+					{
+						ascent: elementAscent,
+						descent: elementDescent,
+						leadingSpace: false,
+						width: elementWidth,
+						element: token.element.element,
+					},
 				]
 				currentLineWidth = elementWidth
 				currentMaxAscent = elementAscent
@@ -281,8 +330,9 @@ function wrapLine(
 				currentLine.push({
 					ascent: elementAscent,
 					descent: elementDescent,
+					leadingSpace: token.leadingSpace,
 					width: elementWidth,
-					element: element.element,
+					element: token.element.element,
 				})
 				currentLineWidth += elementWidth + startSpace
 				currentMaxAscent = Math.max(currentMaxAscent, elementAscent)
@@ -303,6 +353,42 @@ function wrapLine(
 
 	// remove empty lines
 	return completedLines.filter((line) => line.elements.length > 0)
+}
+
+function tokenizeTextSection(text: string): TextToken[] {
+	return text
+		.split(/\s+/)
+		.flatMap((word, wordIndex) =>
+			splitWordAtSoftBreaks(word).map((fragment, fragmentIndex) => ({
+				text: fragment,
+				leadingSpace: wordIndex > 0 && fragmentIndex == 0,
+			}))
+		)
+		.filter((token) => token.text.length > 0)
+}
+
+function splitWordAtSoftBreaks(word: string): string[] {
+	if (!word.includes("-")) {
+		return [word]
+	}
+
+	const fragments = word.split(/(-)/).filter((fragment) => fragment.length > 0)
+	const wrappedFragments: string[] = []
+	let currentFragment = ""
+
+	for (const fragment of fragments) {
+		currentFragment += fragment
+		if (fragment == "-") {
+			wrappedFragments.push(currentFragment)
+			currentFragment = ""
+		}
+	}
+
+	if (currentFragment.length > 0) {
+		wrappedFragments.push(currentFragment)
+	}
+
+	return wrappedFragments
 }
 
 // fit the word into the current line width
@@ -330,11 +416,39 @@ function fitWord(syllables: string[], currentLineWidth: number, maxWidth: number
 // get the metrics of a string
 // this is used to get the width of the string and the ascent and descent of the font
 // the ascent and descent are used to calculate the position of the text
-function getTextMetrics(text: string, fontSize: string): TextMetrics {
+function getTextMetrics(text: string, fontSize: string): TextMetricInfo {
 	const canvas = document.createElement("canvas")
 	const context = canvas.getContext("2d")
 	context.font = `${fontSize} "Computer Modern Serif"`
-	return context.measureText(text)
+	const canvasMetrics = context.measureText(text)
+	const outlineMetrics = getOutlineTextMetrics(text, fontSize)
+
+	return {
+		width: Math.max(canvasMetrics.width, outlineMetrics?.width ?? 0),
+		actualBoundingBoxAscent: Math.max(
+			canvasMetrics.actualBoundingBoxAscent || 0,
+			outlineMetrics?.actualBoundingBoxAscent ?? 0
+		),
+		actualBoundingBoxDescent: Math.max(
+			canvasMetrics.actualBoundingBoxDescent || 0,
+			outlineMetrics?.actualBoundingBoxDescent ?? 0
+		),
+	}
+}
+
+function getOutlineTextMetrics(text: string, fontSize: string): TextMetricInfo | null {
+	if (!textToSVG) {
+		return null
+	}
+
+	const fontSizePx = new SVG.Number(fontSize).convertToUnit("px").value
+	const metrics = textToSVG.getMetrics(text, { fontSize: fontSizePx })
+
+	return {
+		width: metrics.width,
+		actualBoundingBoxAscent: metrics.ascender,
+		actualBoundingBoxDescent: Math.abs(metrics.descender),
+	}
 }
 export type MathJaxRenderInfo = {
 	// the rendered mathjax element
@@ -362,9 +476,9 @@ export function renderMathJax(text: string, fontSize = 10): MathJaxRenderInfo {
 	}
 	defs.remove()
 
-	// 1.971 magic number (how large 1em, i.e. font size, is in terms of ex) for the font used in MathJax.
-	// 1.137 is a correction factor to make the normal text ex align with the mathjax ex (looks better). this is a bit of a hack
-	let exem = 1 / (1.971 * 1.137)
+	// 1.971 is the MathJax TeX font ratio between 1em and 1ex.
+	// Keep the SVG preview at the same nominal TeX size that TikZ uses when compiling the export.
+	let exem = 1 / 1.971
 	//convert width and height from ex to pt via expt and then to px
 	let widthStr = svgElement.node.getAttribute("width")
 	let width = new SVG.Number(new SVG.Number(widthStr).value * exem * fontSize, "pt").convertToUnit("px")
