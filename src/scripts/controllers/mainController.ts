@@ -182,6 +182,10 @@ export class MainController {
 		exportSVGButton.addEventListener("click", ExportController.instance.exportSVG.bind(ExportController.instance), {
 			passive: true,
 		})
+		const exportPNGButton: HTMLButtonElement = document.getElementById("exportPNGButton") as HTMLButtonElement
+		exportPNGButton.addEventListener("click", ExportController.instance.exportPNG.bind(ExportController.instance), {
+			passive: true,
+		})
 
 		// init save and load
 		SaveController.instance
@@ -776,6 +780,10 @@ export class MainController {
 		})
 		hotkeys("ctrl+shift+e,command+shift+e", () => {
 			ExportController.instance.exportSVG()
+			return false
+		})
+		hotkeys("ctrl+alt+shift+e,command+alt+shift+e", () => {
+			ExportController.instance.exportPNG()
 			return false
 		})
 

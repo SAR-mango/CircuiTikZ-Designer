@@ -17,6 +17,9 @@ const parserXML = require("@prettier/plugin-xml").default
  * @class
  */
 export class ExportController {
+	private static readonly pngExportDPI = 1200
+	private static readonly svgPixelsPerInch = 96
+
 	private static _instance: ExportController
 	public static get instance(): ExportController {
 		if (!ExportController._instance) {
@@ -29,6 +32,8 @@ export class ExportController {
 	private modal: Modal
 	private heading: HTMLHeadingElement
 	private exportedContent: HTMLTextAreaElement
+	private exportedImageContainer: HTMLDivElement
+	private exportedImagePreview: HTMLImageElement
 	private fileBasename: HTMLInputElement
 	private fileExtension: HTMLInputElement
 	private fileExtensionDropdown: HTMLUListElement
@@ -37,7 +42,7 @@ export class ExportController {
 
 	private copyTooltip: Tooltip
 
-	private defaultDisplay: string
+	private imagePreviewURL: string | null = null
 
 	private usedIDs: Map<string, number>
 	public createExportID(prefix = "N"): string {
@@ -74,15 +79,15 @@ export class ExportController {
 		this.modal = new Modal(this.modalElement)
 		this.heading = document.getElementById("exportModalLabel") as HTMLHeadingElement
 		this.exportedContent = document.getElementById("exportedContent") as HTMLTextAreaElement
+		this.exportedImageContainer = document.getElementById("exportedImageContainer") as HTMLDivElement
+		this.exportedImagePreview = document.getElementById("exportedImagePreview") as HTMLImageElement
 		this.fileBasename = document.getElementById("exportModalFileBasename") as HTMLInputElement
 		this.fileExtension = document.getElementById("exportModalFileExtension") as HTMLInputElement
 		this.fileExtensionDropdown = document.getElementById("exportModalFileExtensionDropdown") as HTMLUListElement
 		this.copyButton = document.getElementById("copyExportedContent") as HTMLDivElement
 		this.saveButton = document.getElementById("exportModalSave") as HTMLButtonElement
 
-		this.defaultDisplay = this.exportedContent.parentElement.style.display
-
-		let copyButtonDefaultTooltipText = "Copy to clipboard!"
+		let copyButtonDefaultTooltipText = "Copy to clipboard"
 		this.copyButton.addEventListener("hidden.bs.tooltip", (evt) => {
 			this.copyButton.setAttribute("data-bs-title", copyButtonDefaultTooltipText)
 			this.copyTooltip.dispose()
@@ -97,6 +102,7 @@ export class ExportController {
 
 	exportJSON(text: string) {
 		this.heading.textContent = "Save JSON"
+		this.showTextExport()
 
 		// create extension select list
 		const extensions = [".json", ".txt"]
@@ -112,7 +118,7 @@ export class ExportController {
 	 */
 	exportCircuiTikZ() {
 		this.heading.innerHTML = "Export CircuiTi<i>k</i>Z code"
-		this.exportedContent.parentElement.style.display = this.defaultDisplay
+		this.showTextExport()
 		// create extension select list
 		const extensions = [".tikz", ".tex", ".pgf"]
 
@@ -150,114 +156,181 @@ export class ExportController {
 	/**
 	 * Shows the exportModal with the SVG code.
 	 */
-	exportSVG() {
+	async exportSVG() {
 		this.heading.textContent = "Export SVG"
-		this.exportedContent.parentElement.style.display = this.defaultDisplay
-		// prepare selection and bounding box
+		this.showTextExport()
+		try {
+			const { textContent } = await this.buildExportSVGMarkup()
+			this.exportedContent.rows = textContent.split("\n").length
+			this.exportedContent.value = textContent
+			this.export([".svg", ".txt"])
+		} catch (error) {
+			console.error(error)
+			alert("Failed to export SVG.")
+		}
+	}
+
+	async exportPNG() {
+		this.heading.textContent = `Export PNG (${ExportController.pngExportDPI} DPI)`
+
+		try {
+			const { textContent, width, height } = await this.buildExportSVGMarkup()
+			if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+				throw new Error("The current circuit does not have a rasterizable bounding box.")
+			}
+
+			const pngBlob = await this.rasterizeSVGToPNG(textContent, width, height)
+			this.showImageExport(pngBlob)
+			this.export(
+				[".png"],
+				() => this.copyPNGToClipboard(pngBlob),
+				() => FileSaver.saveAs(pngBlob, this.createExportFilename() + ".png"),
+				() => this.resetImageExport()
+			)
+		} catch (error) {
+			console.error(error)
+			alert(`Failed to export a ${ExportController.pngExportDPI} DPI PNG.`)
+		}
+	}
+
+	private async buildExportSVGMarkup(): Promise<{ textContent: string; width: number; height: number }> {
 		SelectionController.instance.selectAll()
 		SelectionController.instance.deactivateSelection()
 
-		let colorTheme = MainController.instance.darkMode
+		const colorTheme = MainController.instance.darkMode
 		MainController.instance.darkMode = false
 		MainController.instance.updateTheme()
 
-		//Get the canvas
-		let svgObj = new SVG.Svg()
+		const svgObj = new SVG.Svg()
 		svgObj.node.style.fontSize = "10pt"
 		svgObj.node.style.overflow = "visible"
 
-		// get all used node/symbol names
-		let defsMap: Map<string, SVG.Element> = new Map<string, SVG.Element>()
-		let components: SVG.Element[] = []
-		for (const instance of MainController.instance.circuitComponents) {
-			components.push(instance.toSVG(defsMap))
-		}
-
-		// add to defs
-		if (defsMap.size > 0) {
-			const defs = new SVG.Defs()
-			for (const element of defsMap) {
-				defs.add(element[1])
+		try {
+			let defsMap: Map<string, SVG.Element> = new Map<string, SVG.Element>()
+			let components: SVG.Element[] = []
+			for (const instance of MainController.instance.circuitComponents) {
+				components.push(instance.toSVG(defsMap))
 			}
-			svgObj.add(defs)
-		}
 
-		for (const component of components) {
-			svgObj.add(component)
-		}
+			if (defsMap.size > 0) {
+				const defs = new SVG.Defs()
+				for (const element of defsMap) {
+					defs.add(element[1])
+				}
+				svgObj.add(defs)
+			}
 
-		//basic cleanup of invisible components (fill and stroke both need to be invisible)
-		for (const removeElement of svgObj.find(
-			':is([fill-opacity="0"],[fill="none"],[fill="transparent"]):is([stroke-opacity="0"],[stroke="none"],[stroke-width="0"],[stroke="transparent"])'
-		)) {
-			removeElement.remove()
-		}
-		//basic draggable class
-		for (const removeClass of svgObj.find(".draggable")) {
-			removeClass.removeClass("draggable")
-		}
+			for (const component of components) {
+				svgObj.add(component)
+			}
 
-		// bounding box to include all elements
-		let bbox = svgObj.bbox()
-		if (bbox) {
-			//make bbox 2px larger in every direction to not cut of tiny bits of some objects
-			bbox.x -= 2
-			bbox.y -= 2
-			bbox.width += 4
-			bbox.height += 4
-			svgObj.viewbox(bbox)
-		}
+			for (const removeElement of svgObj.find(
+				':is([fill-opacity="0"],[fill="none"],[fill="transparent"]):is([stroke-opacity="0"],[stroke="none"],[stroke-width="0"],[stroke="transparent"])'
+			)) {
+				removeElement.remove()
+			}
+			for (const removeClass of svgObj.find(".draggable")) {
+				removeClass.removeClass("draggable")
+			}
 
-		// convert to text and make pretty
-		let tempDiv = document.createElement("div")
-		tempDiv.appendChild(svgObj.node)
-		tempDiv.innerHTML = tempDiv.innerHTML.replaceAll(defaultStroke, "#000").replaceAll(defaultFill, "#fff")
-		prettier
-			.format(tempDiv.innerHTML.replaceAll("<br>", "<br/>"), {
-				parser: "xml",
-				plugins: [parserXML],
-				tabWidth: 4,
-				singleAttributePerLine: true,
-				xmlWhitespaceSensitivity: "preserve",
-			})
-			.then((textContent) => {
-				this.exportedContent.rows = textContent.split("\n").length
-				this.exportedContent.value = textContent
-				const extensions = [".svg", ".txt"]
-				this.export(extensions)
-				SelectionController.instance.activateSelection()
+			let width = 0
+			let height = 0
+			const bbox = svgObj.bbox()
+			if (bbox) {
+				bbox.x -= 2
+				bbox.y -= 2
+				bbox.width += 4
+				bbox.height += 4
+				width = bbox.width
+				height = bbox.height
+				svgObj.viewbox(bbox)
+				svgObj.width(width)
+				svgObj.height(height)
+			}
+
+			const tempDiv = document.createElement("div")
+			try {
+				tempDiv.appendChild(svgObj.node)
+				tempDiv.innerHTML = tempDiv.innerHTML.replaceAll(defaultStroke, "#000").replaceAll(defaultFill, "#fff")
+				const textContent = await prettier.format(tempDiv.innerHTML.replaceAll("<br>", "<br/>"), {
+					parser: "xml",
+					plugins: [parserXML],
+					tabWidth: 4,
+					singleAttributePerLine: true,
+					xmlWhitespaceSensitivity: "preserve",
+				})
+				return { textContent, width, height }
+			} finally {
 				tempDiv.remove()
-			})
-		MainController.instance.darkMode = colorTheme
-		MainController.instance.updateTheme()
+			}
+		} finally {
+			SelectionController.instance.activateSelection()
+			MainController.instance.darkMode = colorTheme
+			MainController.instance.updateTheme()
+		}
 	}
 
-	private export(extensions: string[]) {
-		// copy text and adjust tooltip for feedback
-		const copyText = () => {
-			navigator.clipboard.writeText(this.exportedContent.value).then(() => {
-				this.copyButton.setAttribute("data-bs-title", "Copied!")
-				this.copyTooltip.dispose()
-				this.copyTooltip = new Tooltip(this.copyButton)
-				this.copyTooltip.show()
-			})
+	private showTextExport() {
+		this.resetImageExport()
+		this.exportedContent.classList.remove("d-none")
+		this.exportedImageContainer.classList.add("d-none")
+	}
+
+	private showImageExport(imageBlob: Blob) {
+		this.resetImageExport()
+		this.exportedContent.classList.add("d-none")
+		this.exportedImageContainer.classList.remove("d-none")
+		this.imagePreviewURL = URL.createObjectURL(imageBlob)
+		this.exportedImagePreview.src = this.imagePreviewURL
+	}
+
+	private resetImageExport() {
+		this.exportedImagePreview.removeAttribute("src")
+		if (this.imagePreviewURL) {
+			URL.revokeObjectURL(this.imagePreviewURL)
+			this.imagePreviewURL = null
 		}
-		// create listeners
-		const saveFile = (() => {
-			const filename =
-				(this.fileBasename.value.trim() || MainController.instance.designName.value).replace(
-					/[^a-z0-9]/gi,
-					"_"
-				) || "Circuit"
+	}
+
+	private createExportFilename(): string {
+		return (
+			(this.fileBasename.value.trim() || MainController.instance.designName.value).replace(/[^a-z0-9]/gi, "_") ||
+			"Circuit"
+		)
+	}
+
+	private showCopyTooltip(message: string) {
+		this.copyButton.setAttribute("data-bs-title", message)
+		this.copyTooltip.dispose()
+		this.copyTooltip = new Tooltip(this.copyButton)
+		this.copyTooltip.show()
+	}
+
+	private export(
+		extensions: string[],
+		copyAction: () => Promise<void> | void = () => navigator.clipboard.writeText(this.exportedContent.value),
+		saveAction: () => void = () =>
 			FileSaver.saveAs(
 				new Blob([this.exportedContent.value], { type: "text/x-tex;charset=utf-8" }),
-				filename + this.fileExtension.value
-			)
-		}).bind(this)
+				this.createExportFilename() + this.fileExtension.value
+			),
+		cleanup: () => void = () => this.showTextExport()
+	) {
+		const copyContent = async () => {
+			try {
+				await copyAction()
+				this.showCopyTooltip("Copied!")
+			} catch (error) {
+				console.error(error)
+				this.showCopyTooltip("Copy failed")
+			}
+		}
+		// create listeners
 		const hideListener = (() => {
 			this.exportedContent.value = "" // free memory
+			cleanup()
 			this.copyButton.removeEventListener("click", copyText)
-			this.saveButton.removeEventListener("click", saveFile)
+			this.saveButton.removeEventListener("click", saveAction)
 			this.fileExtensionDropdown.replaceChildren()
 			// "once" is not always supported:
 			this.modalElement.removeEventListener("hidden.bs.modal", hideListener)
@@ -285,9 +358,79 @@ export class ExportController {
 		)
 
 		// add listeners & show modal
+		const copyText = () => {
+			copyContent()
+		}
 		this.copyButton.addEventListener("click", copyText, { passive: true })
-		this.saveButton.addEventListener("click", saveFile, { passive: true })
+		this.saveButton.addEventListener("click", saveAction, { passive: true })
 
 		this.modal.show()
+	}
+
+	private async rasterizeSVGToPNG(svgText: string, width: number, height: number): Promise<Blob> {
+		const scale = ExportController.pngExportDPI / ExportController.svgPixelsPerInch
+		const canvas = document.createElement("canvas")
+		canvas.width = Math.max(1, Math.ceil(width * scale))
+		canvas.height = Math.max(1, Math.ceil(height * scale))
+		const context = canvas.getContext("2d")
+		if (!context) {
+			throw new Error("Unable to create a canvas rendering context.")
+		}
+
+		const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" })
+		const svgURL = URL.createObjectURL(svgBlob)
+		try {
+			const image = await this.loadImage(svgURL)
+			context.clearRect(0, 0, canvas.width, canvas.height)
+			context.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+			const pngBlob = await new Promise<Blob | null>((resolve) => {
+				canvas.toBlob(resolve, "image/png")
+			})
+			if (!pngBlob) {
+				throw new Error("Canvas rendering completed, but PNG encoding failed.")
+			}
+			return pngBlob
+		} finally {
+			URL.revokeObjectURL(svgURL)
+		}
+	}
+
+	private async loadImage(url: string): Promise<HTMLImageElement> {
+		return await new Promise((resolve, reject) => {
+			const image = new Image()
+			image.onload = () => resolve(image)
+			image.onerror = () => reject(new Error("The generated SVG could not be loaded for rasterization."))
+			image.src = url
+		})
+	}
+
+	private async copyPNGToClipboard(imageBlob: Blob): Promise<void> {
+		try {
+			if (typeof ClipboardItem != "undefined" && navigator.clipboard?.write) {
+				await navigator.clipboard.write([new ClipboardItem({ [imageBlob.type]: imageBlob })])
+				return
+			}
+		} catch (error) {
+			console.error(error)
+		}
+
+		const electronRequire = (globalThis as typeof globalThis & { require?: (module: string) => any }).require
+		if (typeof electronRequire == "function") {
+			const { clipboard, nativeImage } = electronRequire("electron")
+			clipboard.writeImage(nativeImage.createFromDataURL(await this.blobToDataURL(imageBlob)))
+			return
+		}
+
+		throw new Error("Copying PNG images to the clipboard is not supported in this environment.")
+	}
+
+	private async blobToDataURL(blob: Blob): Promise<string> {
+		return await new Promise((resolve, reject) => {
+			const reader = new FileReader()
+			reader.onload = () => resolve(reader.result as string)
+			reader.onerror = () => reject(reader.error ?? new Error("Unable to read the exported PNG blob."))
+			reader.readAsDataURL(blob)
+		})
 	}
 }
