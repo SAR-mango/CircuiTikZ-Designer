@@ -41,6 +41,9 @@ export abstract class ShapeComponent extends Strokable(Fillable(NodeComponent)) 
 
 	public constructor() {
 		super()
+		// Keep shape-based tools aligned with the universal 0.4pt default.
+		this.strokeInfo.width = new SVG.Number("0.4pt")
+		this.strokeWidthProperty.value = this.strokeInfo.width
 		this.resizeVisualizations = new Map<DirectionInfo, SVG.Element>()
 
 		this.snappingPoints = []

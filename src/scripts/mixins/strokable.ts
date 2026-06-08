@@ -61,7 +61,7 @@ export function Strokable<TBase extends AbstractConstructor<CircuitComponent>>(B
 			this.strokeInfo = {
 				color: "default",
 				opacity: 1,
-				width: new SVG.Number("1pt"),
+				width: new SVG.Number("0.4pt"),
 				style: defaultStrokeStyleChoice.key,
 			}
 
@@ -146,7 +146,7 @@ export function Strokable<TBase extends AbstractConstructor<CircuitComponent>>(B
 				shouldStroke = true
 			}
 
-			if (!this.strokeInfo.width.eq(new SVG.Number("1pt"))) {
+			if (!this.strokeInfo.width.eq(new SVG.Number("0.4pt"))) {
 				stroke.width = this.strokeInfo.width
 				shouldStroke = true
 			}
@@ -167,7 +167,7 @@ export function Strokable<TBase extends AbstractConstructor<CircuitComponent>>(B
 			this.strokeInfo = {
 				color: "default",
 				opacity: 1,
-				width: new SVG.Number("1pt"),
+				width: new SVG.Number("0.4pt"),
 				style: defaultStrokeStyleChoice.key,
 			}
 			this.strokeWidthProperty.value = this.strokeInfo.width

@@ -8,9 +8,9 @@
  * @module inlineSVG
  */
 
-import { Transformer } from "@parcel/plugin";
+const { Transformer } = require("@parcel/plugin");
 
-export default new Transformer({
+module.exports = new Transformer({
 	async transform({ asset }) {
 		let code = await asset.getCode();
 		/**

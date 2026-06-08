@@ -197,10 +197,6 @@ export class ExportController {
 		SelectionController.instance.selectAll()
 		SelectionController.instance.deactivateSelection()
 
-		const colorTheme = MainController.instance.darkMode
-		MainController.instance.darkMode = false
-		MainController.instance.updateTheme()
-
 		const svgObj = new SVG.Svg()
 		svgObj.node.style.fontSize = "10pt"
 		svgObj.node.style.overflow = "visible"
@@ -265,8 +261,6 @@ export class ExportController {
 			}
 		} finally {
 			SelectionController.instance.activateSelection()
-			MainController.instance.darkMode = colorTheme
-			MainController.instance.updateTheme()
 		}
 	}
 

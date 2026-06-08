@@ -83,10 +83,6 @@ export class MainController {
 	symbolsSVG: SVG.Svg
 	symbols: ComponentSymbol[]
 
-	public darkMode = true
-	private darkModeLast = true
-	private currentTheme = "dark"
-
 	private tabID = -1
 
 	mode = Modes.DRAG_PAN
@@ -96,6 +92,7 @@ export class MainController {
 		modeDrawLine: null,
 		modeEraser: null,
 	}
+	private activeQuickToolButton: HTMLElement | null = null
 
 	initPromise: Promise<any>
 	isInitDone: boolean = false
@@ -122,16 +119,6 @@ export class MainController {
 		MainController._instance = this
 		this.isMac = window.navigator.userAgent.toUpperCase().indexOf("MAC") >= 0
 		this.broadcastChannel = new BroadcastChannel("circuitikz-designer")
-
-		// dark mode init
-		const htmlElement = document.documentElement
-		const switchElement = document.getElementById("darkModeSwitch") as HTMLInputElement
-		const defaultTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-		this.currentTheme = localStorage.getItem("circuitikz-designer-theme") || defaultTheme
-		htmlElement.setAttribute("data-bs-theme", this.currentTheme)
-		this.darkModeLast = false
-		this.darkMode = this.currentTheme === "dark"
-		switchElement.checked = this.darkMode
 
 		let mathJaxPromise = this.loadMathJax()
 		let canvasPromise = this.initCanvas()
@@ -222,18 +209,6 @@ export class MainController {
 				this.preprocessSymbolColors(g)
 			}
 
-			const htmlElement = document.documentElement
-			const switchElement = document.getElementById("darkModeSwitch") as HTMLInputElement
-			switchElement.addEventListener("change", function () {
-				if ((MainController.instance.darkMode = switchElement.checked)) {
-					htmlElement.setAttribute("data-bs-theme", "dark")
-					localStorage.setItem("circuitikz-designer-theme", "dark")
-				} else {
-					htmlElement.setAttribute("data-bs-theme", "light")
-					localStorage.setItem("circuitikz-designer-theme", "light")
-				}
-				MainController.instance.updateTheme()
-			})
 			MainController.instance.updateTheme()
 			PropertyController.instance.update()
 			this.isInitDone = true
@@ -557,16 +532,16 @@ export class MainController {
 				if (tabID == MainController.instance.tabID) {
 					const oldTitle = document.title
 
-					let darkMode = true
+					let showAlternateIcon = true
 					const switchFavicon = () => {
-						if (darkMode) {
+						if (showAlternateIcon) {
 							favicon.href = alternateLink
 							document.title = "Click here!"
 						} else {
 							favicon.href = faviconLink
 							document.title = oldTitle
 						}
-						darkMode = !darkMode
+						showAlternateIcon = !showAlternateIcon
 					}
 					const interval = setInterval(switchFavicon, 1100)
 					switchFavicon()
@@ -575,7 +550,7 @@ export class MainController {
 					document.addEventListener("visibilitychange", () => {
 						if (!document.hidden) {
 							clearInterval(interval)
-							darkMode = false
+							showAlternateIcon = false
 							switchFavicon()
 						}
 					})
@@ -896,21 +871,44 @@ export class MainController {
 		this.modeSwitchButtons.modeDrawLine = document.getElementById("modeDrawLine")
 		this.modeSwitchButtons.modeEraser = document.getElementById("modeEraser")
 
-		this.modeSwitchButtons.modeDragPan.addEventListener("click", () => this.switchMode(Modes.DRAG_PAN), {
-			passive: false,
-		})
+		this.modeSwitchButtons.modeDragPan.addEventListener(
+			"click",
+			() => this.startQuickToolPlacement(this.modeSwitchButtons.modeDragPan, () => new WireComponent(true)),
+			{
+				passive: false,
+			}
+		)
 		this.modeSwitchButtons.modeDrawLine.addEventListener(
 			"click",
-			() => {
-				this.switchMode(Modes.DRAG_PAN)
-				this.modeSwitchButtons.modeDrawLine.classList.add("selected")
-				ComponentPlacer.instance.placeComponent(new WireComponent())
-			},
+			() => this.startQuickToolPlacement(this.modeSwitchButtons.modeDrawLine, () => new WireComponent(false, true)),
 			{ passive: false }
 		)
-		this.modeSwitchButtons.modeEraser.addEventListener("click", () => this.switchMode(Modes.ERASE), {
-			passive: false,
-		})
+		this.modeSwitchButtons.modeEraser.addEventListener(
+			"click",
+			() => this.startQuickToolPlacement(this.modeSwitchButtons.modeEraser, () => new RectangleComponent(false)),
+			{
+				passive: false,
+			}
+		)
+	}
+
+	private setActiveQuickToolButton(button: HTMLElement | null) {
+		if (this.activeQuickToolButton) {
+			this.activeQuickToolButton.classList.remove("selected")
+		}
+		this.activeQuickToolButton = button
+		this.activeQuickToolButton?.classList.add("selected")
+	}
+
+	private startQuickToolPlacement(button: HTMLElement, createComponent: () => CircuitComponent) {
+		if (this.mode === Modes.COMPONENT && this.activeQuickToolButton === button) {
+			this.switchMode(Modes.DRAG_PAN)
+			return
+		}
+
+		this.switchMode(Modes.DRAG_PAN)
+		this.setActiveQuickToolButton(button)
+		ComponentPlacer.instance.placeComponent(createComponent())
 	}
 
 	private addShapeComponentsToOffcanvas(leftOffcanvasAccordion: HTMLDivElement, leftOffcanvasOC: Offcanvas) {
@@ -1442,17 +1440,14 @@ export class MainController {
 
 		switch (oldMode) {
 			case Modes.DRAG_PAN:
-				this.modeSwitchButtons.modeDragPan.classList.remove("selected")
 				CanvasController.instance.deactivatePanning()
 				SelectionController.instance.deactivateSelection()
 				break
 			case Modes.ERASE:
-				this.modeSwitchButtons.modeEraser.classList.remove("selected")
 				EraseController.instance.deactivate()
 				break
 			case Modes.COMPONENT:
-				this.modeSwitchButtons.modeDragPan.classList.remove("selected")
-				this.modeSwitchButtons.modeDrawLine.classList.remove("selected")
+				this.setActiveQuickToolButton(null)
 				ComponentPlacer.instance.placeCancel()
 				CanvasController.instance.deactivatePanning()
 				break
@@ -1462,16 +1457,15 @@ export class MainController {
 
 		switch (newMode) {
 			case Modes.DRAG_PAN:
-				this.modeSwitchButtons.modeDragPan.classList.add("selected")
+				this.setActiveQuickToolButton(null)
 				CanvasController.instance.activatePanning()
 				SelectionController.instance.activateSelection()
 				break
 			case Modes.ERASE:
-				this.modeSwitchButtons.modeEraser.classList.add("selected")
+				this.setActiveQuickToolButton(null)
 				EraseController.instance.activate()
 				break
 			case Modes.COMPONENT:
-				this.modeSwitchButtons.modeDragPan.classList.add("selected")
 				CanvasController.instance.activatePanning()
 				break
 			default:
@@ -1480,15 +1474,9 @@ export class MainController {
 	}
 
 	public updateTheme() {
-		if (this.darkModeLast == this.darkMode) {
-			return
-		}
-
 		for (const instance of this.circuitComponents) {
 			instance.updateTheme()
 		}
-
-		this.darkModeLast = this.darkMode
 	}
 
 	/**

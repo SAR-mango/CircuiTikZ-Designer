@@ -13,7 +13,7 @@
 		"*.{htm,html}": [
 			"@parcel/transformer-posthtml",
 			"@parcel/transformer-html",
-			"./scripts/inlineSVG.mjs"
+			"./scripts/inlineSVG.js"
 		],
 		"*.svg": [
 			"@parcel/transformer-svg"

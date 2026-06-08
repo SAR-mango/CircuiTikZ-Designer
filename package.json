@@ -32,6 +32,15 @@
 		"make": "electron-forge make"
 	},
 	"browserslist": "> 0.5%, last 2 versions, not dead",
+	"sass": {
+		"loadPaths": [
+			"node_modules"
+		],
+		"quietDeps": true,
+		"silenceDeprecations": [
+			"import"
+		]
+	},
 	"dependencies": {
 		"@prettier/plugin-xml": "^3.4.2",
 		"@svgdotjs/svg.draggable.js": "^3.0.6",

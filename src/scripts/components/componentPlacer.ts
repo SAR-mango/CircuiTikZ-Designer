@@ -71,6 +71,9 @@ export class ComponentPlacer {
 	 * @param ev which event is responsible for the movement
 	 */
 	public placeMove(ev: MouseEvent | TouchEvent) {
+		if (window.TouchEvent && ev instanceof TouchEvent && ev.touches.length !== 1) {
+			return
+		}
 		let pt = ComponentPlacer.pointFromEvent(ev)
 		this.component.placeMove(pt, ev)
 		SnapController.instance.showSnapPoints(!ev.shiftKey)

@@ -71,6 +71,8 @@ export class CanvasController {
 	private zoomFactor = 0.1
 	private zoomMin = 0.25
 	private zoomMax = 10
+	private wheelDeltaModeLinePixels = 17
+	private wheelDeltaModeScreenPixels = 53
 	private zoomCurrent = 2
 	public get currentZoom() {
 		return this.zoomCurrent
@@ -101,6 +103,7 @@ export class CanvasController {
 		this.paper = SVG.SVG("#grid") as SVG.Rect
 		this.xAxis = SVG.SVG("#xAxis") as SVG.Line
 		this.yAxis = SVG.SVG("#yAxis") as SVG.Line
+		this.handleModifiedWheelPan = this.handleModifiedWheelPan.bind(this)
 
 		document.addEventListener("mouseup", (ev) => {
 			CanvasController.instance.draggingFromInput = null
@@ -147,6 +150,7 @@ export class CanvasController {
 
 		// init pan & zoom
 		this.activatePanning()
+		this.canvas.node.addEventListener("wheel", this.handleModifiedWheelPan, { passive: false, capture: true })
 
 		// Drag picture with mouse
 		canvas.on("panning", this.movePaper, this, { passive: false })
@@ -430,6 +434,36 @@ export class CanvasController {
 		return (event instanceof MouseEvent && event.shiftKey) || !snap ?
 				pt
 			:	SnapController.instance.snapPoint(pt, undefined)
+	}
+
+	private normalizeWheelDelta(event: WheelEvent): SVG.Point {
+		let scaleFactor = 1
+		switch (event.deltaMode) {
+			case WheelEvent.DOM_DELTA_LINE:
+				scaleFactor = this.wheelDeltaModeLinePixels
+				break
+			case WheelEvent.DOM_DELTA_PAGE:
+				scaleFactor = this.wheelDeltaModeScreenPixels
+				break
+			default:
+				scaleFactor = 1
+		}
+
+		return new SVG.Point(event.deltaX * scaleFactor, event.deltaY * scaleFactor)
+	}
+
+	private handleModifiedWheelPan(event: WheelEvent) {
+		if (!event.metaKey) {
+			return
+		}
+
+		event.preventDefault()
+		event.stopImmediatePropagation()
+
+		const delta = this.normalizeWheelDelta(event).div(this.zoomCurrent)
+		const currentViewBox = this.canvas.viewbox()
+		this.canvas.viewbox(currentViewBox.x + delta.x, currentViewBox.y + delta.y, currentViewBox.w, currentViewBox.h)
+		this.movePaper({ detail: {} } as CustomEvent)
 	}
 
 	/** how the grid should be drawn

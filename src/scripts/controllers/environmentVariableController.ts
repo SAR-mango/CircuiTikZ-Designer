@@ -112,7 +112,7 @@ const labelOrientationOption: GlobalOption = {
 
 const STYLE_PRESETS: Record<StylePreset, Partial<Record<OptionsChoice, string>>> = {
 	default: {
-		voltages: "european",
+		voltages: "american",
 		// currents: "european",
 		// resistors: "american",
 		// inductors: "cute",

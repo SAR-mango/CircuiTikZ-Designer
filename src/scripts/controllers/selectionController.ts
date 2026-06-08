@@ -47,6 +47,7 @@ export class SelectionController {
 			.stroke({
 				width: 0.5,
 				color: defaultStroke,
+				dasharray: "4, 2",
 			})
 			.fill("none")
 			.id("selectionRectangle")
@@ -75,6 +76,9 @@ export class SelectionController {
 		}
 
 		if (evt instanceof MouseEvent && evt.button !== 0) {
+			return
+		}
+		if (window.TouchEvent && evt instanceof TouchEvent && evt.touches.length !== 1) {
 			return
 		}
 

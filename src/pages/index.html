@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en-US" data-bs-theme="dark">
+<html lang="en-US" data-bs-theme="light">
 	<head>
 		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SN05E6G25Q"></script>
@@ -55,19 +55,6 @@
 					<span class="badge text-bg-secondary version unselectable d-none d-lg-inline"> v0.0.0 </span>
 				</a>
 				<div class="d-flex gap-2 align-items-center ms-md-auto">
-					<a
-						role="button"
-						class="toolbarButton material-symbols-outlined"
-						id="helpButton"
-						data-bs-toggle="modal"
-						data-bs-target="#helpModal"
-						data-bs-toggle-second="tooltip"
-						data-bs-trigger="hover"
-						data-bs-placement="bottom"
-						data-bs-title="Help menu">
-						help
-					</a>
-					<div class="vr me-2 d-block d-md-none"></div>
 					<button
 						class="navbar-toggler d-md-none"
 						type="button"
@@ -86,7 +73,7 @@
 						</h5>
 						<button
 							type="button"
-							class="btn-close btn-close-white"
+							class="btn-close"
 							data-bs-dismiss="offcanvas"
 							aria-label="Close"
 							data-bs-target="#ctNavbar"></button>
@@ -100,88 +87,81 @@
 							<li class="nav-item col-12 col-md-auto">
 								<button
 									type="button"
-									class="dropdown-item"
+									class="dropdown-item toolbarNavButton"
 									id="loadButton"
 									data-bs-toggle="tooltip"
 									data-bs-placement="bottom"
 									data-bs-title="Load a circuit (part) from a JSON file (Ctrl/⌘ + O)">
 									<span class="material-symbols-outlined toolbarButton">file_open</span>
-									<span class="d-md-none fs-4"> Load </span>
-								</button>
-							</li>
-							<li class="nav-item col-12 col-md-auto">
-								<button
-									type="button"
-									class="dropdown-item"
-									id="saveButton"
-									data-bs-toggle="tooltip"
-									data-bs-placement="bottom"
-									data-bs-title="Save the circuit in a JSON file (Ctrl/⌘ + S)">
-									<span class="material-symbols-outlined toolbarButton">save</span>
-									<span class="d-md-none fs-4"> Save </span>
-								</button>
-							</li>
-							<li class="nav-item py-2 py-md-1 col-12 col-md-auto">
-								<div class="vr d-none d-md-flex h-100 mx-md-2"></div>
-								<hr class="d-md-none my-2" />
-							</li>
-							<li class="nav-item col-12 col-md-auto">
-								<button
-									type="button"
-									class="dropdown-item"
-									id="exportCircuiTikZButton"
-									data-bs-toggle="tooltip"
-									data-bs-placement="bottom"
-									data-bs-title="Export the circuit as CircuiTikZ code (Ctrl/⌘ + E)">
-									<span class="material-symbols-outlined toolbarButton">code</span>
-									<span class="d-md-none fs-4">
-										<div>Export CircuiTi<i>k</i>Z code</div>
+									<span class="toolbarNavLabel">
+										<span class="toolbarNavLabelAction">Load</span>
+										<span class="toolbarNavLabelFormat">JSON</span>
 									</span>
 								</button>
 							</li>
 							<li class="nav-item col-12 col-md-auto">
 								<button
 									type="button"
-									class="dropdown-item"
+									class="dropdown-item toolbarNavButton"
+									id="saveButton"
+									data-bs-toggle="tooltip"
+									data-bs-placement="bottom"
+									data-bs-title="Save the circuit in a JSON file (Ctrl/⌘ + S)">
+									<span class="material-symbols-outlined toolbarButton">save</span>
+									<span class="toolbarNavLabel">
+										<span class="toolbarNavLabelAction">Save</span>
+										<span class="toolbarNavLabelFormat">JSON</span>
+									</span>
+								</button>
+							</li>
+							<li class="nav-item py-2 py-md-1 col-12 col-md-auto">
+								<div class="vr d-none d-md-flex h-100 mx-md-2"></div>
+								<hr class="d-md-none my-2" />
+							</li>
+							<li class="nav-item col-12 col-md-auto">
+								<button
+									type="button"
+									class="dropdown-item toolbarNavButton"
+									id="exportCircuiTikZButton"
+									data-bs-toggle="tooltip"
+									data-bs-placement="bottom"
+									data-bs-title="Export the circuit as CircuiTikZ code (Ctrl/⌘ + E)">
+									<span class="material-symbols-outlined toolbarButton">code</span>
+									<span class="toolbarNavLabel">
+										<span class="toolbarNavLabelAction">Export</span>
+										<span class="toolbarNavLabelFormat">CircuiTi<i>k</i>Z</span>
+									</span>
+								</button>
+							</li>
+							<li class="nav-item col-12 col-md-auto">
+								<button
+									type="button"
+									class="dropdown-item toolbarNavButton"
 									id="exportSVGButton"
 									data-bs-toggle="tooltip"
 									data-bs-placement="bottom"
 									data-bs-title="Export the circuit as SVG code (Ctrl/⌘ + Shift + E)">
 									<span class="material-symbols-outlined toolbarButton">image</span>
-									<span class="d-md-none fs-4"> Export SVG code </span>
+									<span class="toolbarNavLabel">
+										<span class="toolbarNavLabelAction">Export</span>
+										<span class="toolbarNavLabelFormat">SVG</span>
+									</span>
 								</button>
 							</li>
 							<li class="nav-item col-12 col-md-auto">
 								<button
 									type="button"
-									class="dropdown-item"
+									class="dropdown-item toolbarNavButton"
 									id="exportPNGButton"
 									data-bs-toggle="tooltip"
 									data-bs-placement="bottom"
 									data-bs-title="Export the circuit as a 1200 DPI PNG (Ctrl/⌘ + Alt/⌥ + Shift + E)">
 									<span class="material-symbols-outlined toolbarButton">imagesmode</span>
-									<span class="d-md-none fs-4"> Export PNG (1200 DPI) </span>
+									<span class="toolbarNavLabel">
+										<span class="toolbarNavLabelAction">Export</span>
+										<span class="toolbarNavLabelFormat">PNG</span>
+									</span>
 								</button>
-							</li>
-							<li class="nav-item py-2 py-md-1 col-12 col-md-auto">
-								<div class="vr d-none d-md-flex h-100 mx-md-2"></div>
-								<hr class="d-md-none my-2" />
-							</li>
-							<li class="nav-item col-12 col-md-auto align-self-md-center">
-								<div class="form-check form-switch d-flex ps-0 m-0 fs-3 gap-2">
-									<label
-										class="form-check-label material-symbols-outlined toolbarButton"
-										for="darkModeSwitch"
-										id="darkModeLabel">
-										dark_mode
-									</label>
-									<input
-										class="form-check-input m-0 align-self-center"
-										type="checkbox"
-										id="darkModeSwitch"
-										checked />
-									<label class="d-md-none fs-4" for="darkModeSwitch">Toggle dark mode</label>
-								</div>
 							</li>
 							<li class="nav-item py-2 py-md-1 col-12 col-md-auto">
 								<div class="vr d-none d-md-flex h-100 mx-md-2"></div>
@@ -190,11 +170,14 @@
 							<li class="nav-item col-12 col-md-auto">
 								<button
 									type="button"
-									class="dropdown-item"
+									class="dropdown-item toolbarNavButton"
 									data-bs-toggle="modal"
 									data-bs-target="#tabManagementModal">
 									<span class="toolbarButton material-symbols-outlined">tab_group</span>
-									<span class="d-md-none fs-4"> Tab management </span>
+									<span class="toolbarNavLabel">
+										<span class="toolbarNavLabelAction"></span>
+										<span class="toolbarNavLabelFormat">Tabs</span>
+									</span>
 								</button>
 							</li>
 							<li class="nav-item py-2 py-md-1 col-12 col-md-auto">
@@ -204,11 +187,14 @@
 							<li class="nav-item col-12 col-md-auto">
 								<button
 									type="button"
-									class="dropdown-item"
+									class="dropdown-item toolbarNavButton"
 									data-bs-toggle="modal"
 									data-bs-target="#aboutModal">
 									<span class="toolbarButton material-symbols-outlined">info</span>
-									<span class="d-md-none fs-4"> About </span>
+									<span class="toolbarNavLabel">
+										<span class="toolbarNavLabelAction"></span>
+										<span class="toolbarNavLabelFormat">About</span>
+									</span>
 								</button>
 							</li>
 						</ul>
@@ -236,35 +222,42 @@
 						<div class="vr"></div>
 						<a
 							id="modeDragPan"
-							class="toolbarButton material-symbols-outlined selected"
+							class="toolbarButton toolbarToolButton"
 							role="button"
 							data-bs-toggle="tooltip"
 							data-bs-placement="bottom"
-							data-bs-title="Pan or zoom the canvas (Esc)"
-							>drag_pan</a
-						>
+							data-bs-title="Place a straight wire">
+							<svg class="toolbarToolIcon" viewBox="0 0 17 12" aria-hidden="true">
+								<line x1="2" y1="10" x2="15" y2="2" />
+							</svg>
+						</a>
 						<a
 							id="modeDrawLine"
-							class="toolbarButton material-symbols-outlined"
+							class="toolbarButton toolbarToolButton"
 							role="button"
 							data-bs-toggle="tooltip"
 							data-bs-placement="bottom"
-							data-bs-title="Draw wires (W)"
-							>draw</a
-						>
+							data-bs-title="Place an arrow">
+							<svg class="toolbarToolIcon toolbarToolIconArrow" viewBox="-1 -2 12 8" aria-hidden="true">
+								<polyline points="0,5 5,5 5,0 9.1,0" />
+								<polygon points="9,-1 10.5,0 9,1" />
+							</svg>
+						</a>
 						<a
 							id="modeEraser"
-							class="toolbarButton material-symbols-outlined"
+							class="toolbarButton toolbarToolButton"
 							role="button"
 							data-bs-toggle="tooltip"
 							data-bs-placement="bottom"
-							data-bs-title="Erase components and wires (Del, Backspace)"
-							>ink_eraser</a
-						>
+							data-bs-title="Place a rectangle or text box">
+							<svg class="toolbarToolIcon toolbarToolIconRect" viewBox="0 0 17 12" aria-hidden="true">
+								<rect x="1" y="1" width="15" height="10" rx="0" ry="0" />
+							</svg>
+						</a>
 						<div class="vr"></div>
 						<a
 							role="button"
-							class="toolbarButton material-symbols-outlined"
+							class="toolbarButton toolbarButtonNoShadow material-symbols-outlined"
 							id="undoButton"
 							data-bs-toggle="tooltip"
 							data-bs-placement="bottom"
@@ -273,7 +266,7 @@
 						>
 						<a
 							role="button"
-							class="toolbarButton material-symbols-outlined"
+							class="toolbarButton toolbarButtonNoShadow material-symbols-outlined"
 							id="redoButton"
 							data-bs-toggle="tooltip"
 							data-bs-placement="bottom"
@@ -724,7 +717,7 @@
 								<tr>
 									<td class="table-active">Cancel <b>wire</b></td>
 									<td>Press Esc</td>
-									<td>Click move tool</td>
+									<td>Tap the selected tool</td>
 								</tr>
 							</tbody>
 							<tbody class="table-group-divider">
