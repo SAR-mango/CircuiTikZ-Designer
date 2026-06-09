@@ -374,104 +374,133 @@ export class RectangleComponent extends ShapeComponent {
 		}
 	}
 
-	protected buildTikzCommand(command: TikzNodeCommand): void {
-		command.options.push("shape=rectangle")
-		super.buildTikzCommand(command)
+	private buildTikzTextNode(includeRotation: boolean): TikzNodeCommand | null {
+		if (!this.textAreaProperty.value) {
+			return null
+		}
 
-		let strokeWidth = this.strokeInfo.width.convertToUnit("px").value
+		let options: string[] = []
 
-		command.options.push(
-			"minimum width=" +
-				roundTikz(new SVG.Number(this.size.x - strokeWidth, "px").convertToUnit("cm").value) +
-				"cm"
-		)
-		command.options.push(
-			"minimum height=" +
-				roundTikz(new SVG.Number(this.size.y - strokeWidth, "px").convertToUnit("cm").value) +
-				"cm"
-		)
+		// treat justify like left aligned
+		let alignDir =
+			this.textAreaAlign.value.numberID == TextAlign.JUSTIFY ? -1 : this.textAreaAlign.value.numberID - 1
+		let dir = new SVG.Point(alignDir, this.textAreaJustify.value.numberID)
 
-		if (this.textAreaProperty.value) {
-			let options: string[] = []
+		// which anchor and position corresponds to the direction?
+		let anchor = basicDirections.find((item) => item.direction.eq(dir)).name
+		let pos = this.position.add(dir.mul(this.size.div(2)).rotate(this.rotationDeg))
+		options.push("anchor=" + anchor)
 
-			//treat justify like left aligned
-			let alignDir =
-				this.textAreaAlign.value.numberID == TextAlign.JUSTIFY ? -1 : this.textAreaAlign.value.numberID - 1
-			let dir = new SVG.Point(alignDir, this.textAreaJustify.value.numberID)
+		switch (this.textAreaAlign.value.numberID) {
+			case TextAlign.LEFT:
+				options.push("align=left")
+				break
+			case TextAlign.CENTER:
+				options.push("align=center")
+				break
+			case TextAlign.RIGHT:
+				options.push("align=right")
+				break
+			default:
+				options.push("align=justify")
+				break
+		}
 
-			// which anchor and position corresponds to the direction?
-			let anchor = basicDirections.find((item) => item.direction.eq(dir)).name
-			let pos = this.position.add(dir.mul(this.size.div(2)).rotate(this.rotationDeg))
-			options.push("anchor=" + anchor)
+		const isSingleLine = !this.textAreaProperty.value.includes("\n")
+		const isCenteredText =
+			this.textAreaAlign.value.numberID == TextAlign.CENTER &&
+			this.textAreaJustify.value.numberID == TextJustify.CENTER
+		const canUsePlainCenteredTextNode = isSingleLine && isCenteredText
 
-			switch (this.textAreaAlign.value.numberID) {
-				case TextAlign.LEFT:
-					options.push("align=left")
-					break
-				case TextAlign.CENTER:
-					options.push("align=center")
-					break
-				case TextAlign.RIGHT:
-					options.push("align=right")
-					break
-				default:
-					options.push("align=justify")
-					break
-			}
-
-			// text dimensions
+		if (!canUsePlainCenteredTextNode) {
 			let innerSep = this.textInnerSep.value.plus(this.strokeInfo.width)
 			let textWidth = new SVG.Number(this.size.x, "px").minus(innerSep.times(2)).convertToUnit("cm")
 
 			options.push(`text width=${roundTikz(textWidth.value)}cm`)
 			options.push(`inner sep=${innerSep.toString()}`)
+		} else {
+			options.push("inner sep=0pt")
+		}
 
-			// rectangle rotation
-			if (this.rotationDeg != 0) {
-				options.push("rotate=" + this.rotationDeg)
-			}
+		if (includeRotation && this.rotationDeg != 0) {
+			options.push("rotate=" + this.rotationDeg)
+		}
 
-			//escape special characters
-			const replaceDict = {
-				"#": "\\#",
-				"$": "\\$",
-				"%": "\\%",
-				"&": "\\&",
-				"_": "\\_",
-				"{": "\\{",
-				"}": "\\}",
-				"~": "\\textasciitilde",
-				"^": "\\textasciicircum",
-				"\\": "\\textbackslash",
-				"\n": "\\\\",
-			}
-			const mathjaxParser = new MathjaxParser()
-			const lineSections: string[] = []
-			const explicitInputLines = this.textAreaProperty.value.split("\n").map((line) => line.trim())
-			for (const inputLine of explicitInputLines) {
-				const parsedLine = mathjaxParser.parse(inputLine)
-				const lineElements = []
-				for (const element of parsedLine) {
-					if (element.type == "text") {
-						lineElements.push(
-							element.text.replaceAll(/[\#\%\$\&\_\{\}\~\^\\\n]/g, (match) => replaceDict[match])
-						)
-					} else {
-						lineElements.push("$" + element.text + "$")
-					}
+		const replaceDict = {
+			"#": "\\#",
+			"$": "\\$",
+			"%": "\\%",
+			"&": "\\&",
+			"_": "\\_",
+			"{": "\\{",
+			"}": "\\}",
+			"~": "\\textasciitilde",
+			"^": "\\textasciicircum",
+			"\\": "\\textbackslash",
+			"\n": "\\\\",
+		}
+		const mathjaxParser = new MathjaxParser()
+		const lineSections: string[] = []
+		const explicitInputLines = this.textAreaProperty.value.split("\n").map((line) => line.trim())
+		for (const inputLine of explicitInputLines) {
+			const parsedLine = mathjaxParser.parse(inputLine)
+			const lineElements = []
+			for (const element of parsedLine) {
+				if (element.type == "text") {
+					lineElements.push(
+						element.text.replaceAll(/[\#\%\$\&\_\{\}\~\^\\\n]/g, (match) => replaceDict[match])
+					)
+				} else {
+					lineElements.push("$" + element.text + "$")
 				}
-				lineSections.push(lineElements.join(" "))
 			}
-			let escapedText = lineSections.join("\\\\")
+			lineSections.push(lineElements.join(" "))
+		}
+		let escapedText = lineSections.join("\\\\")
 
-			let fontStr = this.textFontSize.value.key == defaultFontSize.key ? "" : `\\${this.textFontSize.value.name} `
-			let latexStr = `${fontStr}${escapedText}`
-			latexStr =
-				this.textColor.value ?
-					"\\textcolor" + this.textColor.value.toTikzString() + "{" + latexStr + "}"
-				:	latexStr
+		let fontStr = this.textFontSize.value.key == defaultFontSize.key ? "" : `\\${this.textFontSize.value.name} `
+		let latexStr = `${fontStr}${escapedText}`
+		latexStr =
+			this.textColor.value ?
+				"\\textcolor" + this.textColor.value.toTikzString() + "{" + latexStr + "}"
+			:	latexStr
 
-			command.additionalNodes.push({ options: options, position: pos, content: latexStr, additionalNodes: [] })
+		return { options, position: pos, content: latexStr, additionalNodes: [] }
+	}
+
+	protected buildTikzCommand(command: TikzNodeCommand): void {
+		let strokeWidth = this.strokeInfo.width.convertToUnit("px").value
+		const hasVisibleStroke = this.strokeInfo.opacity > 0 && strokeWidth > 0
+		const hasVisibleFill = this.fillInfo.opacity > 0 && this.fillInfo.color !== "default"
+		const textNode = this.buildTikzTextNode(!(!hasVisibleStroke && !hasVisibleFill))
+		const exportTextOnly = textNode !== null && !hasVisibleStroke && !hasVisibleFill
+
+		if (!exportTextOnly) {
+			command.options.push("shape=rectangle")
+		}
+		super.buildTikzCommand(command)
+
+		if (!exportTextOnly) {
+			command.options.push(
+				"minimum width=" +
+					roundTikz(new SVG.Number(this.size.x - strokeWidth, "px").convertToUnit("cm").value) +
+					"cm"
+			)
+			command.options.push(
+				"minimum height=" +
+					roundTikz(new SVG.Number(this.size.y - strokeWidth, "px").convertToUnit("cm").value) +
+					"cm"
+			)
+		}
+
+		if (textNode) {
+			if (exportTextOnly) {
+				command.options.push(...textNode.options)
+				command.position = textNode.position
+				command.content = textNode.content
+			} else {
+				command.additionalNodes.push(textNode)
+			}
 		}
 	}
 

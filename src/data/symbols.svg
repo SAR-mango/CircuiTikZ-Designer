@@ -383,11 +383,11 @@
 		</symbol>
 		<symbol id="node_npn">
 			<g stroke="#000" stroke-miterlimit="10" stroke-width=".4">
-				<path fill="none" stroke-width=".53134" d="M32.27954.26569v17.72729l-15.87408 7.27558"/>
-				<path fill="none" stroke-width="1.06267" d="M16.40546 17.99298v23.28149"/>
-				<path fill="none" stroke-width=".53134" d="m16.40546 33.99889 15.87408 7.27558v17.72729"/>
-				<path d="m21.99668 36.56154 1.27031-2.77167 4.92354 5.61043-7.46418-.06708Z" stroke="none"/>
-				<path fill="none" stroke-width=".53134" d="M16.40546 29.63372h-16.13977"/>
+				<path fill="none" stroke-width=".53134" d="M32.27954.26569V7.6077L17.33974 20.82331"/>
+				<path fill="none" stroke-width="1.06267" d="M17.33974 9.0761v41.11463"/>
+				<path fill="none" stroke-width=".53134" d="M17.33974 38.44352 32.27954 51.65913v7.34263"/>
+				<path d="M32.27954 51.65913 26.7106 49.8059 29.7572 46.3595Z" stroke="none"/>
+				<path fill="none" stroke-width=".53134" d="M.26569 29.63372H17.33974V26.69692"/>
 			</g>
 		</symbol>
 		<symbol id="node_npn_bodydiode">
@@ -448,19 +448,19 @@
 		</symbol>
 		<symbol id="node_npn_nobase">
 			<g stroke="#000" stroke-miterlimit="10" stroke-width=".4">
-				<path fill="none" stroke-width=".53134" d="M16.40544.26569v17.72729l-15.87408 7.27558"/>
-				<path fill="none" stroke-width="1.06267" d="M.53136 17.99298v23.28149"/>
-				<path fill="none" stroke-width=".53134" d="m.53136 33.99889 15.87408 7.27558v17.72729"/>
-				<path d="m6.12257 36.56154 1.27033-2.77167 4.92353 5.61043-7.46418-.06708Z" stroke="none"/>
+				<path fill="none" stroke-width=".53134" d="M16.40544.26569V7.6077L1.46564 20.82331"/>
+				<path fill="none" stroke-width="1.06267" d="M1.46564 9.0761v41.11463"/>
+				<path fill="none" stroke-width=".53134" d="M1.46564 38.44352 16.40544 51.65913v7.34263"/>
+				<path d="M16.40544 51.65913 10.8365 49.8059 13.8831 46.3595Z" stroke="none"/>
 			</g>
 		</symbol>
 		<symbol id="node_npn_nobase_tr-circle">
 			<g stroke="#000" stroke-miterlimit="10" stroke-width=".4">
 				<path fill="none" stroke-width="1.06267" d="M39.77562 29.63372c0-10.83712-8.785-19.62212-19.62213-19.62212s-19.62214 8.785-19.62214 19.62212 8.78502 19.62214 19.62215 19.62214 19.62212-8.785 19.62212-19.62214Zm-19.62213 0"/>
-				<path fill="none" stroke-width=".53134" d="M29.10452.26569v17.72729l-15.87408 7.27558"/>
-				<path fill="none" stroke-width="1.06267" d="M13.23044 17.99298v23.28149"/>
-				<path fill="none" stroke-width=".53134" d="m13.23044 33.99889 15.87408 7.27558v17.72729"/>
-				<path d="m18.82165 36.56154 1.27032-2.77167 4.92354 5.61043-7.46418-.06708Z" stroke="none"/>
+				<path fill="none" stroke-width=".53134" d="M29.10452.26569V7.6077L14.16472 20.82331"/>
+				<path fill="none" stroke-width="1.06267" d="M14.16472 9.0761v41.11463"/>
+				<path fill="none" stroke-width=".53134" d="M14.16472 38.44352 29.10452 51.65913v7.34263"/>
+				<path d="M29.10452 51.65913 23.53558 49.8059 26.58218 46.3595Z" stroke="none"/>
 			</g>
 		</symbol>
 		<symbol id="node_npn_photo">
@@ -798,11 +798,11 @@
 		<symbol id="node_npn_tr-circle">
 			<g stroke="#000" stroke-miterlimit="10" stroke-width=".4">
 				<path fill="none" stroke-width="1.06267" d="M42.95064 29.63372c0-10.83712-8.785-19.62212-19.62213-19.62212s-19.62213 8.785-19.62213 19.62212 8.78501 19.62214 19.62212 19.62214c10.83714 0 19.62214-8.785 19.62214-19.62214Zm-19.62213 0"/>
-				<path fill="none" stroke-width=".53134" d="M32.27954.26569v17.72729l-15.87408 7.27558"/>
-				<path fill="none" stroke-width="1.06267" d="M16.40546 17.99298v23.28149"/>
-				<path fill="none" stroke-width=".53134" d="m16.40546 33.99889 15.87408 7.27558v17.72729"/>
-				<path d="m21.99668 36.56154 1.27031-2.77167 4.92354 5.61043-7.46418-.06708Z" stroke="none"/>
-				<path fill="none" stroke-width=".53134" d="M16.40546 29.63372h-16.13977"/>
+				<path fill="none" stroke-width=".53134" d="M32.27954.26569V7.6077L17.33974 20.82331"/>
+				<path fill="none" stroke-width="1.06267" d="M17.33974 9.0761v41.11463"/>
+				<path fill="none" stroke-width=".53134" d="M17.33974 38.44352 32.27954 51.65913v7.34263"/>
+				<path d="M32.27954 51.65913 26.7106 49.8059 29.7572 46.3595Z" stroke="none"/>
+				<path fill="none" stroke-width=".53134" d="M.26569 29.63372H17.33974V26.69692"/>
 			</g>
 		</symbol>
 		<symbol id="node_pnp">

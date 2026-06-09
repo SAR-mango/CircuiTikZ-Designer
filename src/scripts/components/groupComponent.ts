@@ -25,7 +25,7 @@ export class GroupComponent extends CircuitComponent {
 
 	public groupedComponents: CircuitComponent[] = []
 
-	constructor(components: CircuitComponent[]) {
+	constructor(components: CircuitComponent[], selectAfterCreate: boolean = true) {
 		super()
 		MainController.instance.circuitComponents.pop() // add later at specific index instead
 		this.displayName = "Group"
@@ -57,7 +57,9 @@ export class GroupComponent extends CircuitComponent {
 		this.properties.add(PropertyCategories.ordering, grouping)
 
 		this.update()
-		SelectionController.instance.selectComponents([this], SelectionMode.RESET)
+		if (selectAfterCreate) {
+			SelectionController.instance.selectComponents([this], SelectionMode.RESET)
+		}
 		this.snappingPoints = this.groupedComponents.map((component) => component.snappingPoints).flat()
 	}
 
@@ -165,6 +167,16 @@ export class GroupComponent extends CircuitComponent {
 		}
 		return new GroupComponent(components)
 	}
+	public static fromJsonForPlacement(saveObject: GroupSaveObject): GroupComponent {
+		let components: CircuitComponent[] = []
+		for (const saveObj of saveObject.components) {
+			components.push(CircuitComponent.fromJson(saveObj))
+		}
+		const group = new GroupComponent(components, false)
+		group.finishedPlacing = false
+		group.draggable(false)
+		return group
+	}
 	public toTikzString(): string {
 		let outStr = []
 		for (const component of this.groupedComponents) {
@@ -180,8 +192,7 @@ export class GroupComponent extends CircuitComponent {
 		return group
 	}
 	public copyForPlacement(): CircuitComponent {
-		//not needed
-		return
+		return GroupComponent.fromJsonForPlacement(this.toJson())
 	}
 	public remove(): void {
 		this.viewSelected(false)
@@ -192,16 +203,21 @@ export class GroupComponent extends CircuitComponent {
 		this.visualization.remove()
 	}
 	public placeMove(pos: SVG.Point, ev?: Event): void {
-		//not needed
-		return
+		this.moveTo(pos)
 	}
 	public placeStep(pos: SVG.Point, ev?: Event): boolean {
-		//not needed
-		return
+		this.moveTo(pos)
+		return true
 	}
 	public placeFinish(): void {
-		//not needed
-		return
+		this.finishedPlacing = true
+		this.update()
+	}
+	public placeRotate(angleDeg: number): void {
+		this.rotate(angleDeg)
+	}
+	public placeFlip(horizontal: boolean): void {
+		this.flip(horizontal)
 	}
 
 	public moveRel(delta: SVG.Point): void {

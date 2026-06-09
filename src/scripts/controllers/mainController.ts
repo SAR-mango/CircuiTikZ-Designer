@@ -18,6 +18,8 @@ import {
 	NodeSymbolComponent,
 	PathSymbolComponent,
 	WireComponent,
+	WireDirection,
+	WireSaveObject,
 	ComponentSymbol,
 	ComponentSaveObject,
 	EraseController,
@@ -27,6 +29,7 @@ import {
 	defaultFill,
 	PolygonComponent,
 	GroupSaveObject,
+	GroupComponent,
 	memorySizeOf,
 	SaveFileFormat,
 	emtpySaveState,
@@ -892,6 +895,108 @@ export class MainController {
 		)
 	}
 
+	private createTemplateComponent(symbol: ComponentSymbol): CircuitComponent | null {
+		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp") {
+			return null
+		}
+
+		const makePoint = (x: number, y: number) => new SVG.Point(x, y)
+		const makeWire = (
+			points: SVG.Point[],
+			directions: WireDirection[],
+			extra: Partial<WireSaveObject> = {}
+		): WireSaveObject => ({
+			type: "wire",
+			points,
+			directions,
+			...extra,
+		})
+
+		const saveObject: GroupSaveObject =
+			symbol.tikzName === "npn" ?
+				{
+					type: "group",
+					components: [
+						makeWire([makePoint(-14.173, 0), makePoint(0.945, -1.89)], [WireDirection.HV]),
+						makeWire(
+							[makePoint(0.945, -13.228), makePoint(0.945, 13.228)],
+							[WireDirection.Straight],
+							{ stroke: { width: new SVG.Number("0.8pt") } }
+						),
+						makeWire(
+							[makePoint(0.945, 5.669), makePoint(14.173, 14.173)],
+							[WireDirection.Straight],
+							{ endArrow: "stealth" }
+						),
+						makeWire([makePoint(0.945, -5.669), makePoint(14.173, -14.173)], [WireDirection.Straight]),
+						makeWire([makePoint(14.173, -14.173), makePoint(14.173, -18.898)], [WireDirection.Straight]),
+						makeWire([makePoint(14.173, 14.173), makePoint(14.173, 18.898)], [WireDirection.Straight]),
+					],
+				}
+			:	{
+					type: "group",
+					components: [
+						makeWire([makePoint(-14.173, 0), makePoint(0.945, -1.89)], [WireDirection.HV]),
+						makeWire(
+							[makePoint(0.945, -13.228), makePoint(0.945, 13.228)],
+							[WireDirection.Straight],
+							{ stroke: { width: new SVG.Number("0.8pt") } }
+						),
+						makeWire([makePoint(0.945, 5.669), makePoint(14.173, 14.173)], [WireDirection.Straight]),
+						makeWire(
+							[makePoint(0.945, -5.669), makePoint(14.173, -14.173)],
+							[WireDirection.Straight],
+							{ startArrow: "stealth" }
+						),
+						makeWire([makePoint(14.173, -14.173), makePoint(14.173, -18.898)], [WireDirection.Straight]),
+						makeWire([makePoint(14.173, 14.173), makePoint(14.173, 18.898)], [WireDirection.Straight]),
+					],
+				}
+
+		const component = GroupComponent.fromJsonForPlacement(saveObject)
+		component.displayName = symbol.displayName
+		return component
+	}
+
+	private renderTemplateIcon(svgIcon: SVG.Svg, symbol: ComponentSymbol): boolean {
+		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp") {
+			return false
+		}
+
+		svgIcon.viewbox(-16, -20, 34, 40).width(34).height(40)
+
+		const stroke = { color: defaultStroke, width: 1, linecap: "round", linejoin: "round" }
+		const fill = { color: defaultStroke }
+
+		svgIcon.polyline([
+			[-14.173, 0],
+			[0.945, 0],
+			[0.945, -1.89],
+		]).fill("none").stroke(stroke)
+
+		svgIcon.line(0.945, -13.228, 0.945, 13.228).stroke({ ...stroke, width: 1.6 })
+		svgIcon.line(0.945, -5.669, 14.173, -14.173).stroke(stroke)
+		svgIcon.line(14.173, -14.173, 14.173, -18.898).stroke(stroke)
+		svgIcon.line(0.945, 5.669, 14.173, 14.173).stroke(stroke)
+		svgIcon.line(14.173, 14.173, 14.173, 18.898).stroke(stroke)
+
+		if (symbol.tikzName === "npn") {
+			svgIcon.polygon([
+				[14.173, 14.173],
+				[8.6, 12.3],
+				[11.55, 8.85],
+			]).fill(fill).stroke("none")
+		} else {
+			svgIcon.polygon([
+				[0.945, -5.669],
+				[6.52, -7.55],
+				[3.56, -10.99],
+			]).fill(fill).stroke("none")
+		}
+
+		return true
+	}
+
 	private setActiveQuickToolButton(button: HTMLElement | null) {
 		if (this.activeQuickToolButton) {
 			this.activeQuickToolButton.classList.remove("selected")
@@ -1329,10 +1434,10 @@ export class MainController {
 						ComponentPlacer.instance.placeCancel()
 					}
 
-					let newComponent: CircuitComponent
-					if (symbol.isNodeSymbol) {
+					let newComponent: CircuitComponent = this.createTemplateComponent(symbol)
+					if (!newComponent && symbol.isNodeSymbol) {
 						newComponent = new NodeSymbolComponent(symbol)
-					} else {
+					} else if (!newComponent) {
 						newComponent = new PathSymbolComponent(symbol)
 					}
 					ComponentPlacer.instance.placeComponent(newComponent)
@@ -1345,20 +1450,22 @@ export class MainController {
 
 				let svgIcon = SVG.SVG().addTo(addButton)
 
-				let viewBox = new SVG.Box(symbol._mapping.values().toArray()[0].viewBox)
+				if (!this.renderTemplateIcon(svgIcon, symbol)) {
+					let viewBox = new SVG.Box(symbol._mapping.values().toArray()[0].viewBox)
 
-				//oversize viewbox due to stroke widths
-				viewBox.width += symbol.maxStroke
-				viewBox.height += symbol.maxStroke
-				viewBox.x -= symbol.maxStroke / 2
-				viewBox.y -= symbol.maxStroke / 2
+					//oversize viewbox due to stroke widths
+					viewBox.width += symbol.maxStroke
+					viewBox.height += symbol.maxStroke
+					viewBox.x -= symbol.maxStroke / 2
+					viewBox.y -= symbol.maxStroke / 2
 
-				// svg icon should have new size
-				svgIcon.viewbox(viewBox).width(viewBox.width).height(viewBox.height)
+					// svg icon should have new size
+					svgIcon.viewbox(viewBox).width(viewBox.width).height(viewBox.height)
 
-				let use = svgIcon.use(symbol.symbolElement.id())
-				use.width(symbol.viewBox.width).height(symbol.viewBox.height) // use should have original size values
-				use.stroke(defaultStroke).fill(defaultFill).node.style.color = defaultStroke
+					let use = svgIcon.use(symbol.symbolElement.id())
+					use.width(symbol.viewBox.width).height(symbol.viewBox.height) // use should have original size values
+					use.stroke(defaultStroke).fill(defaultFill).node.style.color = defaultStroke
+				}
 			}
 		}
 	}

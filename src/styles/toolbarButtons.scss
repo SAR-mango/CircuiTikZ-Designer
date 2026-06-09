@@ -65,6 +65,12 @@
 	text-shadow: none;
 }
 
+#addComponentButton,
+#addComponentButton:hover,
+#addComponentButton.selected {
+	text-shadow: none;
+}
+
 .toolbarNavButton {
 	display: inline-flex;
 	align-items: center;
