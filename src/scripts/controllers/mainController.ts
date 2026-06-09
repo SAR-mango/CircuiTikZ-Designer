@@ -946,7 +946,7 @@ export class MainController {
 						makeWire(
 							[makePoint(0.945, -13.228), makePoint(0.945, 13.228)],
 							[WireDirection.Straight],
-							{ stroke: { width: new SVG.Number("0.8pt") } }
+							{ stroke: { width: new SVG.Number("0.4pt") } }
 						),
 						makeWire(
 							[makePoint(0.945, 5.669), makePoint(14.173, 14.173)],
@@ -965,7 +965,7 @@ export class MainController {
 						makeWire(
 							[makePoint(0.945, -13.228), makePoint(0.945, 13.228)],
 							[WireDirection.Straight],
-							{ stroke: { width: new SVG.Number("0.8pt") } }
+							{ stroke: { width: new SVG.Number("0.4pt") } }
 						),
 						makeWire([makePoint(0.945, 5.669), makePoint(14.173, 14.173)], [WireDirection.Straight]),
 						makeWire(
@@ -999,7 +999,7 @@ export class MainController {
 			[0.945, -1.89],
 		]).fill("none").stroke(stroke)
 
-		svgIcon.line(0.945, -13.228, 0.945, 13.228).stroke({ ...stroke, width: 1.6 })
+		svgIcon.line(0.945, -13.228, 0.945, 13.228).stroke(stroke)
 		svgIcon.line(0.945, -5.669, 14.173, -14.173).stroke(stroke)
 		svgIcon.line(14.173, -14.173, 14.173, -18.898).stroke(stroke)
 		svgIcon.line(0.945, 5.669, 14.173, 14.173).stroke(stroke)
