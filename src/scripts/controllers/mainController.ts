@@ -921,7 +921,14 @@ export class MainController {
 	}
 
 	private createTemplateComponent(symbol: ComponentSymbol): CircuitComponent | null {
-		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp" && symbol.tikzName !== "nmos" && symbol.tikzName !== "pmos") {
+		if (
+			symbol.tikzName !== "npn" &&
+			symbol.tikzName !== "pnp" &&
+			symbol.tikzName !== "nmos" &&
+			symbol.tikzName !== "pmos" &&
+			symbol.tikzName !== "sground" &&
+			symbol.tikzName !== "vcc"
+		) {
 			return null
 		}
 
@@ -938,7 +945,44 @@ export class MainController {
 		})
 
 		const saveObject: GroupSaveObject =
-			symbol.tikzName === "npn" ?
+			symbol.tikzName === "sground" ?
+				{
+					type: "group",
+					components: [
+						makeWire(
+							[makePoint(94.488, -75.591), makePoint(94.488, -68.031)],
+							[WireDirection.Straight]
+						),
+						makeWire(
+							[
+								makePoint(86.929, -68.031),
+								makePoint(102.047, -68.031),
+								makePoint(94.488, -60.472),
+								makePoint(86.929, -68.031),
+							],
+							[WireDirection.Straight, WireDirection.Straight, WireDirection.Straight]
+						),
+					],
+				}
+			: symbol.tikzName === "vcc" ?
+				{
+					type: "group",
+					components: [
+						makeWire(
+							[
+								makePoint(109.606, -83.15),
+								makePoint(113.386, -86.929),
+								makePoint(117.165, -83.15),
+							],
+							[WireDirection.Straight, WireDirection.Straight]
+						),
+						makeWire(
+							[makePoint(113.386, -86.929), makePoint(113.386, -75.591)],
+							[WireDirection.Straight]
+						),
+					],
+				}
+			: symbol.tikzName === "npn" ?
 				{
 					type: "group",
 					components: [
@@ -1018,14 +1062,44 @@ export class MainController {
 	}
 
 	private renderTemplateIcon(svgIcon: SVG.Svg, symbol: ComponentSymbol): boolean {
-		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp" && symbol.tikzName !== "nmos" && symbol.tikzName !== "pmos") {
+		if (
+			symbol.tikzName !== "npn" &&
+			symbol.tikzName !== "pnp" &&
+			symbol.tikzName !== "nmos" &&
+			symbol.tikzName !== "pmos" &&
+			symbol.tikzName !== "sground" &&
+			symbol.tikzName !== "vcc"
+		) {
 			return false
 		}
 
-		svgIcon.viewbox(-16, -20, 34, 40).width(34).height(40)
-
 		const stroke = { color: defaultStroke, width: 1, linecap: "round", linejoin: "round" }
 		const fill = { color: defaultStroke }
+
+		if (symbol.tikzName === "sground") {
+			svgIcon.viewbox(84, -77, 20, 18).width(20).height(18)
+			svgIcon.line(94.488, -75.591, 94.488, -68.031).stroke(stroke)
+			svgIcon.polyline([
+				[86.929, -68.031],
+				[102.047, -68.031],
+				[94.488, -60.472],
+				[86.929, -68.031],
+			]).fill("none").stroke(stroke)
+			return true
+		}
+
+		if (symbol.tikzName === "vcc") {
+			svgIcon.viewbox(108, -88, 11, 14).width(11).height(14)
+			svgIcon.polyline([
+				[109.606, -83.15],
+				[113.386, -86.929],
+				[117.165, -83.15],
+			]).fill("none").stroke(stroke)
+			svgIcon.line(113.386, -86.929, 113.386, -75.591).stroke(stroke)
+			return true
+		}
+
+		svgIcon.viewbox(-16, -20, 34, 40).width(34).height(40)
 
 		if (symbol.tikzName === "nmos" || symbol.tikzName === "pmos") {
 			svgIcon.line(-14.173, 0, -0.945, 0).stroke(stroke)
