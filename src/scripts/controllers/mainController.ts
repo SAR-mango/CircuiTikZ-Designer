@@ -921,7 +921,7 @@ export class MainController {
 	}
 
 	private createTemplateComponent(symbol: ComponentSymbol): CircuitComponent | null {
-		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp") {
+		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp" && symbol.tikzName !== "nmos" && symbol.tikzName !== "pmos") {
 			return null
 		}
 
@@ -958,7 +958,8 @@ export class MainController {
 						makeWire([makePoint(14.173, 14.173), makePoint(14.173, 18.898)], [WireDirection.Straight]),
 					],
 				}
-			:	{
+			: symbol.tikzName === "pnp" ?
+				{
 					type: "group",
 					components: [
 						makeWire([makePoint(-14.173, 0), makePoint(0.945, -1.89)], [WireDirection.HV]),
@@ -977,6 +978,39 @@ export class MainController {
 						makeWire([makePoint(14.173, 14.173), makePoint(14.173, 18.898)], [WireDirection.Straight]),
 					],
 				}
+			: symbol.tikzName === "nmos" ?
+				{
+					type: "group",
+					components: [
+						makeWire([makePoint(-14.173, 0), makePoint(-0.945, 0)], [WireDirection.HV]),
+						makeWire([makePoint(-0.945, -7.559), makePoint(-0.945, 7.559)], [WireDirection.Straight]),
+						makeWire([makePoint(2.835, -7.559), makePoint(2.835, 7.559)], [WireDirection.Straight]),
+						makeWire([makePoint(2.835, -7.559), makePoint(14.173, -7.559)], [WireDirection.Straight]),
+						makeWire([makePoint(14.173, -7.559), makePoint(14.173, -18.898)], [WireDirection.Straight]),
+						makeWire(
+							[makePoint(2.835, 7.559), makePoint(14.173, 7.559)],
+							[WireDirection.Straight],
+							{ endArrow: "stealth" }
+						),
+						makeWire([makePoint(14.173, 7.559), makePoint(14.173, 18.898)], [WireDirection.Straight]),
+					],
+				}
+			:	{
+					type: "group",
+					components: [
+						makeWire([makePoint(-14.173, 0), makePoint(-0.945, 0)], [WireDirection.HV]),
+						makeWire([makePoint(-0.945, -7.559), makePoint(-0.945, 7.559)], [WireDirection.Straight]),
+						makeWire([makePoint(2.835, -7.559), makePoint(2.835, 7.559)], [WireDirection.Straight]),
+						makeWire(
+							[makePoint(2.835, -7.559), makePoint(14.173, -7.559)],
+							[WireDirection.Straight],
+							{ startArrow: "stealth" }
+						),
+						makeWire([makePoint(14.173, -7.559), makePoint(14.173, -18.898)], [WireDirection.Straight]),
+						makeWire([makePoint(2.835, 7.559), makePoint(14.173, 7.559)], [WireDirection.Straight]),
+						makeWire([makePoint(14.173, 7.559), makePoint(14.173, 18.898)], [WireDirection.Straight]),
+					],
+				}
 
 		const component = GroupComponent.fromJsonForPlacement(saveObject)
 		component.displayName = symbol.displayName
@@ -984,7 +1018,7 @@ export class MainController {
 	}
 
 	private renderTemplateIcon(svgIcon: SVG.Svg, symbol: ComponentSymbol): boolean {
-		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp") {
+		if (symbol.tikzName !== "npn" && symbol.tikzName !== "pnp" && symbol.tikzName !== "nmos" && symbol.tikzName !== "pmos") {
 			return false
 		}
 
@@ -993,17 +1027,41 @@ export class MainController {
 		const stroke = { color: defaultStroke, width: 1, linecap: "round", linejoin: "round" }
 		const fill = { color: defaultStroke }
 
-		svgIcon.polyline([
-			[-14.173, 0],
-			[0.945, 0],
-			[0.945, -1.89],
-		]).fill("none").stroke(stroke)
+		if (symbol.tikzName === "nmos" || symbol.tikzName === "pmos") {
+			svgIcon.line(-14.173, 0, -0.945, 0).stroke(stroke)
+			svgIcon.line(-0.945, -7.559, -0.945, 7.559).stroke(stroke)
+			svgIcon.line(2.835, -7.559, 2.835, 7.559).stroke(stroke)
+			svgIcon.line(2.835, -7.559, 14.173, -7.559).stroke(stroke)
+			svgIcon.line(14.173, -7.559, 14.173, -18.898).stroke(stroke)
+			svgIcon.line(2.835, 7.559, 14.173, 7.559).stroke(stroke)
+			svgIcon.line(14.173, 7.559, 14.173, 18.898).stroke(stroke)
 
-		svgIcon.line(0.945, -13.228, 0.945, 13.228).stroke(stroke)
-		svgIcon.line(0.945, -5.669, 14.173, -14.173).stroke(stroke)
-		svgIcon.line(14.173, -14.173, 14.173, -18.898).stroke(stroke)
-		svgIcon.line(0.945, 5.669, 14.173, 14.173).stroke(stroke)
-		svgIcon.line(14.173, 14.173, 14.173, 18.898).stroke(stroke)
+			if (symbol.tikzName === "nmos") {
+				svgIcon.polygon([
+					[14.173, 7.559],
+					[8.55, 10.205],
+					[8.55, 4.913],
+				]).fill(fill).stroke("none")
+			} else {
+				svgIcon.polygon([
+					[2.835, -7.559],
+					[8.458, -10.205],
+					[8.458, -4.913],
+				]).fill(fill).stroke("none")
+			}
+		} else {
+			svgIcon.polyline([
+				[-14.173, 0],
+				[0.945, 0],
+				[0.945, -1.89],
+			]).fill("none").stroke(stroke)
+
+			svgIcon.line(0.945, -13.228, 0.945, 13.228).stroke(stroke)
+			svgIcon.line(0.945, -5.669, 14.173, -14.173).stroke(stroke)
+			svgIcon.line(14.173, -14.173, 14.173, -18.898).stroke(stroke)
+			svgIcon.line(0.945, 5.669, 14.173, 14.173).stroke(stroke)
+			svgIcon.line(14.173, 14.173, 14.173, 18.898).stroke(stroke)
+		}
 
 		if (symbol.tikzName === "npn") {
 			svgIcon.polygon([
@@ -1011,7 +1069,7 @@ export class MainController {
 				[8.6, 12.3],
 				[11.55, 8.85],
 			]).fill(fill).stroke("none")
-		} else {
+		} else if (symbol.tikzName === "pnp") {
 			svgIcon.polygon([
 				[0.945, -5.669],
 				[6.52, -7.55],
