@@ -164,7 +164,7 @@ export class RectangleComponent extends ShapeComponent {
 				{ key: "RIGHT", name: "format_align_right", isMaterialSymbol: true, numberID: TextAlign.RIGHT },
 				{ key: "JUSTIFY", name: "format_align_justify", isMaterialSymbol: true, numberID: TextAlign.JUSTIFY },
 			],
-			{ key: "LEFT", name: "format_align_left", isMaterialSymbol: true, numberID: TextAlign.LEFT },
+			{ key: "CENTER", name: "format_align_center", isMaterialSymbol: true, numberID: TextAlign.CENTER },
 			undefined,
 			"text:align"
 		)
@@ -185,7 +185,7 @@ export class RectangleComponent extends ShapeComponent {
 				{ key: "CENTER", name: "vertical_align_center", isMaterialSymbol: true, numberID: TextJustify.CENTER },
 				{ key: "END", name: "vertical_align_bottom", isMaterialSymbol: true, numberID: TextJustify.END },
 			],
-			{ key: "START", name: "vertical_align_top", isMaterialSymbol: true, numberID: TextJustify.START },
+			{ key: "CENTER", name: "vertical_align_center", isMaterialSymbol: true, numberID: TextJustify.CENTER },
 			undefined,
 			"text:justify"
 		)
@@ -274,10 +274,10 @@ export class RectangleComponent extends ShapeComponent {
 			let hasText = false
 			if (this.textAreaProperty.value != undefined && this.textAreaProperty.value !== "") {
 				textData.text = this.textAreaProperty.value
-				if (this.textAreaAlign.value.numberID !== TextAlign.LEFT) {
+				if (this.textAreaAlign.value.numberID !== TextAlign.CENTER) {
 					textData.align = this.textAreaAlign.value.numberID
 				}
-				if (this.textAreaJustify.value.numberID !== TextJustify.START) {
+				if (this.textAreaJustify.value.numberID !== TextJustify.CENTER) {
 					textData.justify = this.textAreaJustify.value.numberID
 				}
 				if (this.textFontSize.value.key !== defaultFontSize.key) {
@@ -308,8 +308,8 @@ export class RectangleComponent extends ShapeComponent {
 		if (saveObject.text) {
 			let text: Text = {
 				text: saveObject.text.text == undefined ? "" : saveObject.text.text,
-				align: saveObject.text.align ?? TextAlign.LEFT,
-				justify: saveObject.text.justify ?? TextJustify.START,
+				align: saveObject.text.align ?? TextAlign.CENTER,
+				justify: saveObject.text.justify ?? TextJustify.CENTER,
 				showPlaceholderText: saveObject.text.showPlaceholderText ?? false,
 				useHyphenation: saveObject.text.useHyphenation ?? false,
 			}
@@ -550,10 +550,10 @@ export class RectangleComponent extends ShapeComponent {
 
 		if (this.textAreaProperty.value || this.createAsText) {
 			let textData: Text = {
-				text: this.textAreaProperty.value || (this.createAsText ? "text component" : ""),
+				text: this.textAreaProperty.value || (this.createAsText ? "text" : ""),
 			}
-			textData.align = this.textAreaAlign.value.numberID ?? TextAlign.LEFT
-			textData.justify = this.textAreaJustify.value.numberID ?? TextJustify.START
+			textData.align = this.textAreaAlign.value.numberID ?? TextAlign.CENTER
+			textData.justify = this.textAreaJustify.value.numberID ?? TextJustify.CENTER
 			textData.fontSize = this.textFontSize.value.key
 
 			textData.color = this.textColor.value?.toString() || "var(--bs-emphasis-color)"
