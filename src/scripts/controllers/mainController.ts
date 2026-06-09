@@ -95,6 +95,8 @@ export class MainController {
 		modeDrawLine: null,
 		modeText: null,
 		modeEraser: null,
+		modeConnectedTerminal: null,
+		modeUnconnectedTerminal: null,
 	}
 	private activeQuickToolButton: HTMLElement | null = null
 
@@ -875,6 +877,8 @@ export class MainController {
 		this.modeSwitchButtons.modeDrawLine = document.getElementById("modeDrawLine")
 		this.modeSwitchButtons.modeText = document.getElementById("modeText")
 		this.modeSwitchButtons.modeEraser = document.getElementById("modeEraser")
+		this.modeSwitchButtons.modeConnectedTerminal = document.getElementById("modeConnectedTerminal")
+		this.modeSwitchButtons.modeUnconnectedTerminal = document.getElementById("modeUnconnectedTerminal")
 
 		this.modeSwitchButtons.modeDragPan.addEventListener(
 			"click",
@@ -896,6 +900,20 @@ export class MainController {
 		this.modeSwitchButtons.modeEraser.addEventListener(
 			"click",
 			() => this.startQuickToolPlacement(this.modeSwitchButtons.modeEraser, () => new RectangleComponent(false)),
+			{
+				passive: false,
+			}
+		)
+		this.modeSwitchButtons.modeConnectedTerminal.addEventListener(
+			"click",
+			() => this.startQuickNodeSymbolPlacement(this.modeSwitchButtons.modeConnectedTerminal, "circ"),
+			{
+				passive: false,
+			}
+		)
+		this.modeSwitchButtons.modeUnconnectedTerminal.addEventListener(
+			"click",
+			() => this.startQuickNodeSymbolPlacement(this.modeSwitchButtons.modeUnconnectedTerminal, "ocirc"),
 			{
 				passive: false,
 			}
@@ -1021,6 +1039,16 @@ export class MainController {
 		this.switchMode(Modes.DRAG_PAN)
 		this.setActiveQuickToolButton(button)
 		ComponentPlacer.instance.placeComponent(createComponent())
+	}
+
+	private startQuickNodeSymbolPlacement(button: HTMLElement, symbolName: string) {
+		const symbol = this.symbols?.find((candidate) => candidate.isNodeSymbol && candidate.tikzName === symbolName)
+		if (!symbol) {
+			console.error(`Could not find quick tool symbol "${symbolName}"`)
+			return
+		}
+
+		this.startQuickToolPlacement(button, () => new NodeSymbolComponent(symbol))
 	}
 
 	private addShapeComponentsToOffcanvas(leftOffcanvasAccordion: HTMLDivElement, leftOffcanvasOC: Offcanvas) {
