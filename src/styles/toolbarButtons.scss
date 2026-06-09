@@ -11,12 +11,12 @@
 	text-decoration: none;
 	color: var(--bs-emphasis-color);
 	font-size: 32px !important;
-	text-shadow: 2px 2px 2px #888;
+	text-shadow: none;
 }
 
 .toolbarButton:hover,
 .toolbarButton.selected {
-	text-shadow: 2px 2px 4px #888;
+	text-shadow: none;
 }
 
 .toolbarButton.selected {
@@ -36,7 +36,7 @@
 .toolbarToolButton.selected {
 	text-decoration: none;
 	background-color: rgba(var(--bs-emphasis-color-rgb), 0.14);
-	box-shadow: 0 0 0 1px rgba(var(--bs-emphasis-color-rgb), 0.08);
+	box-shadow: none;
 }
 
 .toolbarToolIcon {

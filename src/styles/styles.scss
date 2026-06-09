@@ -61,6 +61,17 @@ $danger: #c50f3c;
 	transform: rotate(90deg);
 }
 
+.material-symbols-outlined,
+.toolbarButton,
+.toolbarToolIcon,
+.toolbarToolIconText,
+.copyContentIcon,
+.dropdown-item-icon {
+	text-shadow: none !important;
+	box-shadow: none !important;
+	filter: none !important;
+}
+
 #loadingSpinner > div {
 	margin-top: -50%;
 	margin-left: -50%;
