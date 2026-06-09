@@ -106,18 +106,14 @@ export class ComponentPlacer {
 	 */
 	public placeFinish(ev: Event) {
 		if (this.component) {
-			this.component.placeFinish()
+			const finishedComponent = this.component
+			finishedComponent.placeFinish()
 			this.cleanUp()
 			Undo.addState()
 
-			// restart component placement for just finished component
-			if (window.TouchEvent && !(ev instanceof TouchEvent)) {
-				this.previousComponent = this.component
-				this.placeComponent(this.component.copyForPlacement())
-			} else {
-				this._component = null
-				MainController.instance.switchMode(Modes.DRAG_PAN)
-			}
+			// keep the current tool active until the user explicitly cancels it
+			this.previousComponent = finishedComponent
+			this.placeComponent(finishedComponent.copyForPlacement())
 		}
 	}
 

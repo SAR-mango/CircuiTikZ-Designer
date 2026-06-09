@@ -93,6 +93,7 @@ export class MainController {
 	private modeSwitchButtons = {
 		modeDragPan: null,
 		modeDrawLine: null,
+		modeText: null,
 		modeEraser: null,
 	}
 	private activeQuickToolButton: HTMLElement | null = null
@@ -872,6 +873,7 @@ export class MainController {
 	private initModeButtons() {
 		this.modeSwitchButtons.modeDragPan = document.getElementById("modeDragPan")
 		this.modeSwitchButtons.modeDrawLine = document.getElementById("modeDrawLine")
+		this.modeSwitchButtons.modeText = document.getElementById("modeText")
 		this.modeSwitchButtons.modeEraser = document.getElementById("modeEraser")
 
 		this.modeSwitchButtons.modeDragPan.addEventListener(
@@ -884,6 +886,11 @@ export class MainController {
 		this.modeSwitchButtons.modeDrawLine.addEventListener(
 			"click",
 			() => this.startQuickToolPlacement(this.modeSwitchButtons.modeDrawLine, () => new WireComponent(false, true)),
+			{ passive: false }
+		)
+		this.modeSwitchButtons.modeText.addEventListener(
+			"click",
+			() => this.startQuickToolPlacement(this.modeSwitchButtons.modeText, () => new RectangleComponent(true)),
 			{ passive: false }
 		)
 		this.modeSwitchButtons.modeEraser.addEventListener(
