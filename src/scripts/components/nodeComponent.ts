@@ -2,7 +2,6 @@ import * as SVG from "@svgdotjs/svg.js"
 import {
 	ChoiceEntry,
 	ComponentSaveObject,
-	DEFAULT_COMPONENT_SCALE,
 	defaultStroke,
 	closestBasicDirection,
 	PositionLabelable,
@@ -76,7 +75,7 @@ export abstract class NodeComponent extends PositionLabelable(Nameable(CircuitCo
 		this.size = new SVG.Point()
 
 		this.rotationDeg = 0
-		this.scaleState = new SVG.Point(DEFAULT_COMPONENT_SCALE, DEFAULT_COMPONENT_SCALE)
+		this.scaleState = new SVG.Point(1, 1)
 
 		this.defaultTextPosition = new SVG.Point()
 	}

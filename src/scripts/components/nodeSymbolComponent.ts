@@ -38,6 +38,16 @@ export type NodeSymbolSaveObject = NodeSaveObject & {
  * The class representing all node components which are based on static symbols from the symbol database, i.e. node circuitikz symbols
  */
 export class NodeSymbolComponent extends NodeComponent {
+	private static readonly unscaledSymbolTikzNames = new Set(["npn", "pnp", "nmos", "pmos"])
+	private static readonly unscaledWiringSymbolTikzNames = new Set([
+		"circ",
+		"ocirc",
+		"currarrow",
+		"inputarrow",
+		"trarrow",
+		"flowarrow",
+	])
+
 	private static jsonID = "node"
 	static {
 		CircuitComponent.jsonSaveMap.set(NodeSymbolComponent.jsonID, NodeSymbolComponent)
@@ -53,21 +63,51 @@ export class NodeSymbolComponent extends NodeComponent {
 
 	protected scaleProperty: SliderProperty
 
+	private static usesUnscaledDefaultScale(symbol: ComponentSymbol): boolean {
+		return (
+			NodeSymbolComponent.unscaledSymbolTikzNames.has(symbol.tikzName) ||
+			NodeSymbolComponent.unscaledWiringSymbolTikzNames.has(symbol.tikzName)
+		)
+	}
+
+	private static getDefaultScale(symbol: ComponentSymbol): number {
+		if (NodeSymbolComponent.usesUnscaledDefaultScale(symbol)) {
+			return 1
+		}
+		return DEFAULT_COMPONENT_SCALE
+	}
+
+	private normalizeLegacyDefaultScale(): void {
+		if (!NodeSymbolComponent.usesUnscaledDefaultScale(this.referenceSymbol)) {
+			return
+		}
+		if (
+			Math.abs(this.scaleState.x) !== DEFAULT_COMPONENT_SCALE ||
+			Math.abs(this.scaleState.y) !== DEFAULT_COMPONENT_SCALE
+		) {
+			return
+		}
+
+		this.scaleState = new SVG.Point(Math.sign(this.scaleState.x) || 1, Math.sign(this.scaleState.y) || 1)
+		this.scaleProperty.updateValue(new SVG.Number(1), true, false)
+	}
+
 	constructor(symbol: ComponentSymbol) {
 		super()
+		const defaultScale = NodeSymbolComponent.getDefaultScale(symbol)
 		this.displayName = symbol.displayName
 		this.referenceSymbol = symbol
 
 		this.optionProperties = new Map()
 		this.optionEnumProperties = new Map()
 
-		this.scaleState = new SVG.Point(DEFAULT_COMPONENT_SCALE, DEFAULT_COMPONENT_SCALE)
+		this.scaleState = new SVG.Point(defaultScale, defaultScale)
 		this.scaleProperty = new SliderProperty(
 			"Scale",
 			0.1,
 			10,
 			0.01,
-			new SVG.Number(DEFAULT_COMPONENT_SCALE),
+			new SVG.Number(defaultScale),
 			true,
 			undefined,
 			"manipulation:scale"
@@ -269,6 +309,7 @@ export class NodeSymbolComponent extends NodeComponent {
 	}
 
 	protected buildTikzCommand(command: TikzNodeCommand): void {
+		this.normalizeLegacyDefaultScale()
 		command.options.push(...this.referenceSymbol.optionsToStringArray(this.optionsFromProperties()))
 		super.buildTikzCommand(command)
 	}
@@ -277,6 +318,7 @@ export class NodeSymbolComponent extends NodeComponent {
 		super.applyJson(saveObject)
 		let options = saveObject.options ?? []
 		this.setPropertiesFromOptions(this.referenceSymbol.getOptionsFromOptionNames(options))
+		this.normalizeLegacyDefaultScale()
 		this.scaleProperty.value = new SVG.Number(Math.abs(this.scaleState.x))
 		this.update()
 		this.updateTheme()
@@ -304,6 +346,7 @@ export class NodeSymbolComponent extends NodeComponent {
 	}
 
 	public copyForPlacement(): NodeSymbolComponent {
+		this.normalizeLegacyDefaultScale()
 		let newComponent = new NodeSymbolComponent(this.referenceSymbol)
 		newComponent.rotationDeg = this.rotationDeg
 		newComponent.scaleState = new SVG.Point(this.scaleState)

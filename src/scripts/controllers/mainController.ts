@@ -986,7 +986,7 @@ export class MainController {
 				{
 					type: "group",
 					components: [
-						makeWire([makePoint(-14.173, 0), makePoint(0.945, -1.89)], [WireDirection.HV]),
+						makeWire([makePoint(-4.724, 0), makePoint(0.945, -1.89)], [WireDirection.HV]),
 						makeWire(
 							[makePoint(0.945, -13.228), makePoint(0.945, 13.228)],
 							[WireDirection.Straight],
@@ -1006,7 +1006,7 @@ export class MainController {
 				{
 					type: "group",
 					components: [
-						makeWire([makePoint(-14.173, 0), makePoint(0.945, -1.89)], [WireDirection.HV]),
+						makeWire([makePoint(-4.724, 0), makePoint(0.945, -1.89)], [WireDirection.HV]),
 						makeWire(
 							[makePoint(0.945, -13.228), makePoint(0.945, 13.228)],
 							[WireDirection.Straight],
@@ -1125,7 +1125,7 @@ export class MainController {
 			}
 		} else {
 			svgIcon.polyline([
-				[-14.173, 0],
+				[-4.724, 0],
 				[0.945, 0],
 				[0.945, -1.89],
 			]).fill("none").stroke(stroke)
