@@ -17,7 +17,9 @@ const parserXML = require("@prettier/plugin-xml").default
  * @class
  */
 export class ExportController {
-	private static readonly pngExportDPI = 1200
+	private static readonly defaultPNGExportDPI = 1200
+	private static readonly minPNGExportDPI = 72
+	private static readonly maxPNGExportDPI = 2400
 	private static readonly svgPixelsPerInch = 96
 
 	private static _instance: ExportController
@@ -34,6 +36,8 @@ export class ExportController {
 	private exportedContent: HTMLTextAreaElement
 	private exportedImageContainer: HTMLDivElement
 	private exportedImagePreview: HTMLImageElement
+	private pngSettings: HTMLDivElement
+	private pngDPIInput: HTMLInputElement
 	private fileBasename: HTMLInputElement
 	private fileExtension: HTMLInputElement
 	private fileExtensionDropdown: HTMLUListElement
@@ -43,6 +47,18 @@ export class ExportController {
 	private copyTooltip: Tooltip
 
 	private imagePreviewURL: string | null = null
+	private currentPNGExport:
+		| {
+				textContent: string
+				width: number
+				height: number
+				blob: Blob | null
+				dpi: number | null
+				pendingRender: Promise<Blob> | null
+				pendingDpi: number | null
+				renderToken: number
+		  }
+		| null = null
 
 	private usedIDs: Map<string, number>
 	public createExportID(prefix = "N"): string {
@@ -81,6 +97,8 @@ export class ExportController {
 		this.exportedContent = document.getElementById("exportedContent") as HTMLTextAreaElement
 		this.exportedImageContainer = document.getElementById("exportedImageContainer") as HTMLDivElement
 		this.exportedImagePreview = document.getElementById("exportedImagePreview") as HTMLImageElement
+		this.pngSettings = document.getElementById("exportModalPngSettings") as HTMLDivElement
+		this.pngDPIInput = document.getElementById("exportModalPngDPI") as HTMLInputElement
 		this.fileBasename = document.getElementById("exportModalFileBasename") as HTMLInputElement
 		this.fileExtension = document.getElementById("exportModalFileExtension") as HTMLInputElement
 		this.fileExtensionDropdown = document.getElementById("exportModalFileExtensionDropdown") as HTMLUListElement
@@ -171,25 +189,41 @@ export class ExportController {
 	}
 
 	async exportPNG() {
-		this.heading.textContent = `Export PNG (${ExportController.pngExportDPI} DPI)`
-
 		try {
 			const { textContent, width, height } = await this.buildExportSVGMarkup()
 			if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
 				throw new Error("The current circuit does not have a rasterizable bounding box.")
 			}
 
-			const pngBlob = await this.rasterizeSVGToPNG(textContent, width, height)
-			this.showImageExport(pngBlob)
+			this.currentPNGExport = {
+				textContent,
+				width,
+				height,
+				blob: null,
+				dpi: null,
+				pendingRender: null,
+				pendingDpi: null,
+				renderToken: 0,
+			}
+			this.showPNGExportSettings()
+			const refreshPNGPreview = () => {
+				void this.refreshPNGPreview()
+			}
+			await this.refreshPNGPreview()
+			this.pngDPIInput.addEventListener("change", refreshPNGPreview, { passive: true })
 			this.export(
 				[".png"],
-				() => this.copyPNGToClipboard(pngBlob),
-				() => FileSaver.saveAs(pngBlob, this.createExportFilename() + ".png"),
-				() => this.resetImageExport()
+				async () => this.copyPNGToClipboard(await this.getPNGBlobForCurrentDPI()),
+				async () => FileSaver.saveAs(await this.getPNGBlobForCurrentDPI(), this.createExportFilename() + ".png"),
+				() => {
+					this.pngDPIInput.removeEventListener("change", refreshPNGPreview)
+					this.currentPNGExport = null
+					this.showTextExport()
+				}
 			)
 		} catch (error) {
 			console.error(error)
-			alert(`Failed to export a ${ExportController.pngExportDPI} DPI PNG.`)
+			alert(`Failed to export a ${this.getSelectedPNGExportDPI()} DPI PNG.`)
 		}
 	}
 
@@ -265,6 +299,7 @@ export class ExportController {
 	}
 
 	private showTextExport() {
+		this.hidePNGExportSettings()
 		this.resetImageExport()
 		this.exportedContent.classList.remove("d-none")
 		this.exportedImageContainer.classList.add("d-none")
@@ -303,7 +338,7 @@ export class ExportController {
 	private export(
 		extensions: string[],
 		copyAction: () => Promise<void> | void = () => navigator.clipboard.writeText(this.exportedContent.value),
-		saveAction: () => void = () =>
+		saveAction: () => Promise<void> | void = () =>
 			FileSaver.saveAs(
 				new Blob([this.exportedContent.value], { type: "text/x-tex;charset=utf-8" }),
 				this.createExportFilename() + this.fileExtension.value
@@ -319,12 +354,26 @@ export class ExportController {
 				this.showCopyTooltip("Copy failed")
 			}
 		}
+		const saveContent = async () => {
+			try {
+				await saveAction()
+			} catch (error) {
+				console.error(error)
+				alert("Failed to save the export.")
+			}
+		}
+		const copyText = () => {
+			void copyContent()
+		}
+		const saveExport = () => {
+			void saveContent()
+		}
 		// create listeners
 		const hideListener = (() => {
 			this.exportedContent.value = "" // free memory
 			cleanup()
 			this.copyButton.removeEventListener("click", copyText)
-			this.saveButton.removeEventListener("click", saveAction)
+			this.saveButton.removeEventListener("click", saveExport)
 			this.fileExtensionDropdown.replaceChildren()
 			// "once" is not always supported:
 			this.modalElement.removeEventListener("hidden.bs.modal", hideListener)
@@ -352,17 +401,80 @@ export class ExportController {
 		)
 
 		// add listeners & show modal
-		const copyText = () => {
-			copyContent()
-		}
 		this.copyButton.addEventListener("click", copyText, { passive: true })
-		this.saveButton.addEventListener("click", saveAction, { passive: true })
+		this.saveButton.addEventListener("click", saveExport, { passive: true })
 
 		this.modal.show()
 	}
 
-	private async rasterizeSVGToPNG(svgText: string, width: number, height: number): Promise<Blob> {
-		const scale = ExportController.pngExportDPI / ExportController.svgPixelsPerInch
+	private showPNGExportSettings() {
+		this.pngDPIInput.value = ExportController.defaultPNGExportDPI.toString()
+		this.pngSettings.classList.remove("d-none")
+		this.updatePNGHeading(this.getSelectedPNGExportDPI())
+	}
+
+	private hidePNGExportSettings() {
+		this.pngSettings.classList.add("d-none")
+	}
+
+	private updatePNGHeading(dpi: number) {
+		this.heading.textContent = `Export PNG (${dpi} DPI)`
+	}
+
+	private getSelectedPNGExportDPI(): number {
+		const parsedValue = Number.parseInt(this.pngDPIInput.value, 10)
+		const dpi = Number.isFinite(parsedValue) ? parsedValue : ExportController.defaultPNGExportDPI
+		const normalizedDpi = Math.min(
+			ExportController.maxPNGExportDPI,
+			Math.max(ExportController.minPNGExportDPI, Math.round(dpi))
+		)
+		this.pngDPIInput.value = normalizedDpi.toString()
+		return normalizedDpi
+	}
+
+	private async refreshPNGPreview() {
+		if (!this.currentPNGExport) return
+		const dpi = this.getSelectedPNGExportDPI()
+		this.updatePNGHeading(dpi)
+		const pngBlob = await this.getPNGBlobForCurrentDPI(dpi)
+		if (!this.currentPNGExport || this.currentPNGExport.dpi !== dpi || this.currentPNGExport.blob !== pngBlob) return
+		this.showImageExport(pngBlob)
+	}
+
+	private async getPNGBlobForCurrentDPI(dpi = this.getSelectedPNGExportDPI()): Promise<Blob> {
+		if (!this.currentPNGExport) {
+			throw new Error("PNG export state is not available.")
+		}
+		if (this.currentPNGExport.blob && this.currentPNGExport.dpi === dpi) {
+			return this.currentPNGExport.blob
+		}
+		if (this.currentPNGExport.pendingRender && this.currentPNGExport.pendingDpi === dpi) {
+			return await this.currentPNGExport.pendingRender
+		}
+
+		const exportState = this.currentPNGExport
+		const renderToken = ++exportState.renderToken
+		const renderPromise = this.rasterizeSVGToPNG(exportState.textContent, exportState.width, exportState.height, dpi)
+		exportState.pendingRender = renderPromise
+		exportState.pendingDpi = dpi
+
+		try {
+			const pngBlob = await renderPromise
+			if (this.currentPNGExport === exportState && exportState.renderToken === renderToken) {
+				exportState.blob = pngBlob
+				exportState.dpi = dpi
+			}
+			return pngBlob
+		} finally {
+			if (this.currentPNGExport === exportState && exportState.pendingRender === renderPromise) {
+				exportState.pendingRender = null
+				exportState.pendingDpi = null
+			}
+		}
+	}
+
+	private async rasterizeSVGToPNG(svgText: string, width: number, height: number, dpi: number): Promise<Blob> {
+		const scale = dpi / ExportController.svgPixelsPerInch
 		const canvas = document.createElement("canvas")
 		canvas.width = Math.max(1, Math.ceil(width * scale))
 		canvas.height = Math.max(1, Math.ceil(height * scale))

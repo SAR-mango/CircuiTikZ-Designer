@@ -60,3 +60,8 @@
 	--bs-body-color: #{$secondary};
 	--bs-border-color: #{$secondary};
 }
+
+#exportModalPngDPI {
+	flex: 0 0 96px;
+	width: 96px;
+}
