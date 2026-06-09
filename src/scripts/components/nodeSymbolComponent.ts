@@ -7,6 +7,7 @@ import {
 	ChoiceProperty,
 	CircuitComponent,
 	ComponentSymbol,
+	DEFAULT_COMPONENT_SCALE,
 	defaultFill,
 	defaultStroke,
 	EnumOption,
@@ -60,13 +61,13 @@ export class NodeSymbolComponent extends NodeComponent {
 		this.optionProperties = new Map()
 		this.optionEnumProperties = new Map()
 
-		this.scaleState = new SVG.Point(1, 1)
+		this.scaleState = new SVG.Point(DEFAULT_COMPONENT_SCALE, DEFAULT_COMPONENT_SCALE)
 		this.scaleProperty = new SliderProperty(
 			"Scale",
 			0.1,
 			10,
 			0.01,
-			new SVG.Number(1),
+			new SVG.Number(DEFAULT_COMPONENT_SCALE),
 			true,
 			undefined,
 			"manipulation:scale"

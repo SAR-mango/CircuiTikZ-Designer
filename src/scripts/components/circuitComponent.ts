@@ -26,6 +26,8 @@ import {
 
 type Constructor<T = {}> = new (...args: any[]) => T
 
+export const DEFAULT_COMPONENT_SCALE = 0.75
+
 /**
  * the root object for saving components as json. Extend this for custom components
  */

@@ -2,6 +2,7 @@ import * as SVG from "@svgdotjs/svg.js"
 import {
 	ChoiceEntry,
 	ComponentSaveObject,
+	DEFAULT_COMPONENT_SCALE,
 	defaultStroke,
 	closestBasicDirection,
 	PositionLabelable,
@@ -75,7 +76,7 @@ export abstract class NodeComponent extends PositionLabelable(Nameable(CircuitCo
 		this.size = new SVG.Point()
 
 		this.rotationDeg = 0
-		this.scaleState = new SVG.Point(1, 1)
+		this.scaleState = new SVG.Point(DEFAULT_COMPONENT_SCALE, DEFAULT_COMPONENT_SCALE)
 
 		this.defaultTextPosition = new SVG.Point()
 	}
@@ -189,9 +190,9 @@ export abstract class NodeComponent extends PositionLabelable(Nameable(CircuitCo
 			this.rotationDeg = saveObject.rotation ?? saveObject.rotationDeg
 		}
 
-		if (saveObject.scale) {
-			this.scaleState = new SVG.Point(saveObject.scale)
-		}
+		this.scaleState = saveObject.scale
+			? new SVG.Point(saveObject.scale)
+			: new SVG.Point(1, 1)
 	}
 
 	public toTikzString(): string {

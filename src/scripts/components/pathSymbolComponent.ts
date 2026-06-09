@@ -29,6 +29,7 @@ import {
 	buildTikzStringFromPathCommand,
 	Voltageable,
 	Currentable,
+	DEFAULT_COMPONENT_SCALE,
 	EnvironmentVariableController,
 } from "../internal"
 import { lineRectIntersection, pointInsideRect, selectedBoxWidth, selectionSize } from "../utils/selectionHelper"
@@ -107,13 +108,13 @@ export class PathSymbolComponent extends Currentable(Voltageable(PathLabelable(N
 
 	constructor(symbol: ComponentSymbol) {
 		super()
-		this.scaleState = new SVG.Point(1, 1)
+		this.scaleState = new SVG.Point(DEFAULT_COMPONENT_SCALE, DEFAULT_COMPONENT_SCALE)
 		this.scaleProperty = new SliderProperty(
 			"Scale",
 			0.1,
 			10,
 			0.01,
-			new SVG.Number(1),
+			new SVG.Number(DEFAULT_COMPONENT_SCALE),
 			true,
 			undefined,
 			"manipulation:scale"
@@ -205,7 +206,7 @@ export class PathSymbolComponent extends Currentable(Voltageable(PathLabelable(N
 
 		this.displayName = symbol.displayName
 		this.referenceSymbol = symbol
-		this.scaleState = new SVG.Point(1, 1)
+		this.scaleState = new SVG.Point(DEFAULT_COMPONENT_SCALE, DEFAULT_COMPONENT_SCALE)
 
 		let startPinIndex = this.componentVariant.pins.findIndex((value) => value.name === "START")
 		let endPinIndex = this.componentVariant.pins.findIndex((value) => value.name === "END")
@@ -771,9 +772,9 @@ export class PathSymbolComponent extends Currentable(Voltageable(PathLabelable(N
 		let options = saveObject.options ?? []
 		this.setPropertiesFromOptions(this.referenceSymbol.getOptionsFromOptionNames(options))
 
-		if (saveObject.scale) {
-			this.scaleState = new SVG.Point(saveObject.scale)
-		}
+		this.scaleState = saveObject.scale
+			? new SVG.Point(saveObject.scale)
+			: new SVG.Point(1, 1)
 		this.mirror.value = this.scaleState.y < 0
 		this.invert.value = this.scaleState.x < 0
 		this.scaleProperty.value = new SVG.Number(Math.abs(this.scaleState.x))

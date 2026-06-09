@@ -18,6 +18,7 @@ import {
 	TikzPathCommand,
 	CircuitikzTo,
 	buildTikzStringFromPathCommand,
+	DEFAULT_COMPONENT_SCALE,
 	EnvironmentVariableController,
 	Pole,
 	PoleEntry,
@@ -59,7 +60,7 @@ export class OpenComponent extends Voltageable(PathLabelable(PathComponent)) {
 			0.1,
 			10,
 			0.01,
-			new SVG.Number(1),
+			new SVG.Number(DEFAULT_COMPONENT_SCALE),
 			true,
 			undefined,
 			"manipulation:scale"
@@ -393,9 +394,7 @@ export class OpenComponent extends Voltageable(PathLabelable(PathComponent)) {
 			}
 		}
 
-		if (saveObject.scale) {
-			this.scaleProperty.value = new SVG.Number(saveObject.scale)
-		}
+		this.scaleProperty.value = new SVG.Number(saveObject.scale ?? 1)
 
 		this.update()
 		this.visualization.show()
