@@ -800,7 +800,7 @@ export class MainController {
 		// handle shortcuts for adding components
 		// shortcutDict maps the Shortcut key to the title attribute of the html element where the callback can be found
 		var shortcutDict: { shortcut: string; component: string }[] = [
-			{ shortcut: "g", component: "Ground" },
+			{ shortcut: "g", component: "Signal ground" },
 			{ shortcut: "alt+g,option+g", component: "Ground (tailless)" },
 			{ shortcut: "r", component: "Resistor (american)" },
 			{ shortcut: "alt+r,option+r", component: "Resistor (european)" },
@@ -950,17 +950,19 @@ export class MainController {
 					type: "group",
 					components: [
 						makeWire(
-							[makePoint(94.488, -75.591), makePoint(94.488, -68.031)],
-							[WireDirection.Straight]
-						),
-						makeWire(
 							[
-								makePoint(86.929, -68.031),
-								makePoint(102.047, -68.031),
-								makePoint(94.488, -60.472),
-								makePoint(86.929, -68.031),
+								makePoint(88.189, -68.031),
+								makePoint(94.488, -68.031),
+								makePoint(100.787, -68.031),
+								makePoint(94.488, -61.732),
+								makePoint(88.189, -68.031),
 							],
-							[WireDirection.Straight, WireDirection.Straight, WireDirection.Straight]
+							[
+								WireDirection.Straight,
+								WireDirection.Straight,
+								WireDirection.Straight,
+								WireDirection.Straight,
+							]
 						),
 					],
 				}
@@ -1077,13 +1079,13 @@ export class MainController {
 		const fill = { color: defaultStroke }
 
 		if (symbol.tikzName === "sground") {
-			svgIcon.viewbox(84, -77, 20, 18).width(20).height(18)
-			svgIcon.line(94.488, -75.591, 94.488, -68.031).stroke(stroke)
+			svgIcon.viewbox(86.189, -70.031, 16.598, 10.299).width(16.598).height(10.299)
 			svgIcon.polyline([
-				[86.929, -68.031],
-				[102.047, -68.031],
-				[94.488, -60.472],
-				[86.929, -68.031],
+				[88.189, -68.031],
+				[94.488, -68.031],
+				[100.787, -68.031],
+				[94.488, -61.732],
+				[88.189, -68.031],
 			]).fill("none").stroke(stroke)
 			return true
 		}

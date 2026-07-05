@@ -21,8 +21,7 @@
 		<symbol id="node_sground">
 			<g stroke="#000" stroke-miterlimit="10" stroke-width=".4">
 				<g fill="none" class="fillable">
-					<path fill="none" stroke-width=".53134" d="M8.46839.30373v13.22829"/>
-					<path stroke-width="1.06267" d="M.53135 13.53202h15.87407l-7.93702 10.58264Z"/>
+					<polyline fill="none" stroke-width=".53333" points="2 2 14.59843 2 8.29921 8.29921 2 2"/>
 				</g>
 			</g>
 		</symbol>
@@ -17533,7 +17532,7 @@
 			</variant>
 		</component>
 		<component type="node" display="Signal ground" tikz="sground" group="Grounds and supply voltages" class="grounds" fillable="True">
-			<variant x="8.43034" y="0.26569" viewBox="0 0 16.93673 24.64598" for="node_sground">
+			<variant x="8.29921" y="2" viewBox="0 0 16.59843 10.29921" for="node_sground">
 				<pin name="center" isDefault="true"/>
 			</variant>
 		</component>
